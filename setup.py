@@ -8,6 +8,9 @@ DATA_FILES = [('assets', ['src/assets/AppIcon.icns', 'src/assets/background.png'
 OPTIONS = {
     'argv_emulation': False,  # Disable argv emulation for better Mac integration
     'iconfile': 'src/assets/AppIcon.icns',
+    'packages': ['numpy', 'whisper', 'pyaudio'],  # Explicitly list required packages
+    'includes': ['numpy', 'whisper', 'pyaudio', 'pyautogui'],  # Include specific modules
+    'excludes': ['matplotlib', 'tkinter', 'PyQt5', 'wx', 'test'],  # Exclude unnecessary packages
     'plist': {
         'CFBundleName': 'TalkToMe',
         'CFBundleDisplayName': 'TalkToMe',
