@@ -66,33 +66,10 @@ jobs:
           -draw "text 0,100 '→ Drag to Applications'" \
           src/assets/background.png
 
-    - name: Build App Bundle
+    - name: Build App and Create DMG
       run: |
-        # Build the app bundle
-        python setup.py py2app
-
-    - name: Create DMG
-      run: |
-        # Create a temporary directory for DMG creation
-        TEMP_DIR=$(mktemp -d)
-        mkdir -p "$TEMP_DIR/TalkToMe"
-
-        # Copy the .app bundle
-        cp -r "dist/TalkToMe.app" "$TEMP_DIR/TalkToMe/"
-
-        # Create the DMG with visual installation guide
-        create-dmg \
-          --volname "TalkToMe" \
-          --volicon "src/assets/AppIcon.icns" \
-          --background "src/assets/background.png" \
-          --window-pos 200 120 \
-          --window-size 800 400 \
-          --icon-size 100 \
-          --icon "TalkToMe.app" 200 190 \
-          --app-drop-link 600 185 \
-          --no-internet-enable \
-          "dist/TalkToMe.dmg" \
-          "$TEMP_DIR/TalkToMe/"
+        chmod +x build_mac_app.sh create_dmg.sh
+        ./create_dmg.sh
 
     - name: Create Release
       if: startsWith(github.ref, 'refs/tags/')
@@ -100,23 +77,14 @@ jobs:
       with:
         files: dist/TalkToMe.dmg
         body: |
-          # TalkToMe Voice-to-Text Application
+          # TalkToMe Installation Instructions
 
-          ## Installation
           1. Download TalkToMe.dmg
-          2. Double-click the downloaded file to open it
+          2. Open the DMG file
           3. Drag TalkToMe into your Applications folder
-          4. Launch TalkToMe from Applications
+          4. Open TalkToMe from Applications
+          5. Grant permissions when prompted
 
-          ## First Launch
-          - The app will automatically request necessary permissions
-          - Grant microphone access when prompted
-          - Grant accessibility access when prompted
-
-          ## Features
-          - Voice-to-text with whisper support
-          - System-wide text input
-          - Support for quiet speech
-          - Automatic permission handling
+          The app will automatically request necessary permissions for microphone and accessibility access.
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
