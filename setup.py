@@ -8,9 +8,7 @@ OPTIONS = {
         'pyaudio',
         'numpy',
         'whisper',
-        'pyautogui',
-        'setuptools',
-        'pkg_resources',
+        'pyautogui'
     ],
     'includes': [
         'subprocess',
@@ -18,6 +16,15 @@ OPTIONS = {
         'os',
         'sys',
         'time'
+    ],
+    'excludes': [
+        'tkinter',
+        'matplotlib',
+        'PyQt5',
+        'PyQt6',
+        'PySide2',
+        'PySide6',
+        'wx'
     ],
     'frameworks': ['CoreAudio', 'AudioToolbox'],  # Required for audio capture
     'plist': {
