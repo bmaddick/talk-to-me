@@ -1,32 +1,13 @@
+import sys
+sys.setrecursionlimit(5000)  # Increase recursion limit for py2app
+
 from setuptools import setup
 
 APP = ['src/main.py']
 DATA_FILES = [('assets', ['src/assets/AppIcon.icns', 'src/assets/background.png'])]
 OPTIONS = {
     'argv_emulation': False,  # Disable argv emulation for better Mac integration
-    'packages': [
-        'pyaudio',
-        'numpy',
-        'whisper',
-        'pyautogui'
-    ],
-    'includes': [
-        'subprocess',
-        'platform',
-        'os',
-        'sys',
-        'time'
-    ],
-    'excludes': [
-        'tkinter',
-        'matplotlib',
-        'PyQt5',
-        'PyQt6',
-        'PySide2',
-        'PySide6',
-        'wx'
-    ],
-    'frameworks': ['CoreAudio', 'AudioToolbox'],  # Required for audio capture
+    'iconfile': 'src/assets/AppIcon.icns',
     'plist': {
         'CFBundleName': 'TalkToMe',
         'CFBundleDisplayName': 'TalkToMe',
