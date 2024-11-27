@@ -31,6 +31,8 @@ jobs:
 
     - name: Create App Icon
       run: |
+        # Clean up any existing directories
+        rm -rf src/assets AppIcon.iconset
         mkdir -p src/assets
         # Create a simple blue circle icon
         convert -size 1024x1024 xc:none \
