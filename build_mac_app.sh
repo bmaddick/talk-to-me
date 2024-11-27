@@ -9,6 +9,10 @@ rm -rf build dist
 # Ensure assets directory exists
 mkdir -p src/assets
 
+# Install dependencies with PEP 517
+python3 -m pip install --use-pep517 -r requirements.txt
+python3 -m pip install --use-pep517 py2app
+
 # Set environment variables for library paths
 export DYLD_LIBRARY_PATH="/usr/local/lib:/opt/homebrew/lib:$DYLD_LIBRARY_PATH"
 export LIBRARY_PATH="/usr/local/lib:/opt/homebrew/lib:$LIBRARY_PATH"
@@ -16,7 +20,7 @@ export CFLAGS="-I/usr/local/include -I/opt/homebrew/include"
 export LDFLAGS="-L/usr/local/lib -L/opt/homebrew/lib"
 
 # Build Mac app with py2app
-python3 setup.py py2app --use-pep517
+python3 setup.py py2app
 
 # Verify the app bundle was created
 if [ ! -d "dist/TalkToMe.app" ]; then
