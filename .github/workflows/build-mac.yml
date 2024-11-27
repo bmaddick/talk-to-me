@@ -32,19 +32,15 @@ jobs:
     - name: Create App Icon
       run: |
         mkdir -p src/assets
-        # Create app icon
+        # Create a simple blue circle icon
         convert -size 1024x1024 xc:none \
           -fill '#0066cc' \
           -draw 'circle 512,512 512,100' \
-          -fill white \
-          -font Helvetica -pointsize 400 \
-          -gravity center \
-          -draw "text 0,0 'T'" \
           src/assets/AppIcon.png
 
         # Create iconset directory
         mkdir AppIcon.iconset
-        # Generate icon files
+        # Generate icon files using sips (native macOS tool)
         for size in 16 32 128 256 512; do
           sips -z $size $size src/assets/AppIcon.png --out AppIcon.iconset/icon_${size}x${size}.png
           if [ $size -lt 512 ]; then
@@ -58,15 +54,14 @@ jobs:
     - name: Create DMG Background
       run: |
         mkdir -p src/assets
-        # Create background with visual installation guide
+        # Create simple background with arrow and text
         convert -size 800x400 xc:white \
-          -font Helvetica -pointsize 24 -gravity center \
+          -fill black \
+          -gravity center \
+          -pointsize 24 \
           -draw "text 0,-100 'Install TalkToMe'" \
           -pointsize 14 \
-          -draw "text 0,-50 'Drag TalkToMe to Applications folder to install'" \
-          -draw "image over 200,150 64,64 'src/assets/AppIcon.png'" \
-          -draw "image over 536,150 64,64 'system:Applications.icns'" \
-          -draw "path 'M 264,182 L 536,182 L 526,172 M 536,182 L 526,192'" \
+          -draw "text 0,100 '→ Drag to Applications'" \
           src/assets/background.png
 
     - name: Build App Bundle
