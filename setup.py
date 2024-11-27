@@ -10,14 +10,17 @@ OPTIONS = {
     'iconfile': 'src/assets/AppIcon.icns',
     'packages': ['numpy', 'whisper', 'pyaudio'],  # Explicitly list required packages
     'includes': ['numpy', 'whisper', 'pyaudio', 'pyautogui'],  # Include specific modules
-    'excludes': ['matplotlib', 'tkinter', 'PyQt5', 'wx', 'test'],  # Exclude unnecessary packages
+    'excludes': ['matplotlib', 'tkinter', 'PyQt5', 'wx', 'test', 'sphinx', 'sqlalchemy', 'pandas', 'pygame'],  # Exclude unnecessary packages
+    'frameworks': ['libportaudio.2.dylib'],  # Include required system libraries
+    'resources': ['src/assets'],  # Include assets
+    'strip': True,  # Strip debug symbols to reduce size
     'plist': {
         'CFBundleName': 'TalkToMe',
         'CFBundleDisplayName': 'TalkToMe',
         'CFBundleGetInfoString': "Voice to text for any application",
         'CFBundleIdentifier': "com.bmaddick.talktome",
-        'CFBundleVersion': "1.0.0",
-        'CFBundleShortVersionString': "1.0.0",
+        'CFBundleVersion': "0.1.3",
+        'CFBundleShortVersionString': "0.1.3",
         'LSMinimumSystemVersion': '10.13.0',  # Minimum macOS version
         'NSMicrophoneUsageDescription': 'TalkToMe needs microphone access to convert your speech to text.',
         'NSAppleEventsUsageDescription': 'TalkToMe needs accessibility access to type text in any application.',
