@@ -20,7 +20,7 @@ cp -r "dist/TalkToMe.app" "$DMG_DIR/"
 # Create symlink to Applications folder
 ln -s /Applications "$DMG_DIR/Applications"
 
-# Create the DMG with custom appearance
+# Set custom DMG appearance
 create-dmg \
   --volname "TalkToMe Installer" \
   --volicon "src/assets/AppIcon.icns" \
@@ -32,8 +32,11 @@ create-dmg \
   --hide-extension "TalkToMe.app" \
   --app-drop-link 600 185 \
   --format UDZO \
+  --window-size 800 400 \
+  --text-size 12 \
+  --icon-size 100 \
+  --eula "LICENSE" \
   --no-internet-enable \
-  --skip-jenkins \
   "dist/TalkToMe.dmg" \
   "$DMG_DIR"
 
