@@ -18,48 +18,84 @@ jobs:
       with:
         python-version: '3.12'
 
-    - name: Install Dependencies
+    - name: Install System Dependencies
       run: |
         brew install create-dmg
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
-        pip install py2app
+        brew install portaudio
+        brew install imagemagick
+
+    - name: Install Python Dependencies
+      run: |
+        python -m pip install --upgrade pip setuptools wheel
+        python -m pip install -r requirements.txt
 
     - name: Create App Icon
       run: |
-        # Create temporary iconset directory
+        mkdir -p src/assets
+        # Create app icon
+        convert -size 1024x1024 xc:none \
+          -fill '#0066cc' \
+          -draw 'circle 512,512 512,100' \
+          -fill white \
+          -font Helvetica -pointsize 400 \
+          -gravity center \
+          -draw "text 0,0 'T'" \
+          src/assets/AppIcon.png
+
+        # Create iconset directory
         mkdir AppIcon.iconset
         # Generate icon files
-        sips -z 16 16     src/assets/AppIcon.png --out AppIcon.iconset/icon_16x16.png
-        sips -z 32 32     src/assets/AppIcon.png --out AppIcon.iconset/icon_16x16@2x.png
-        sips -z 32 32     src/assets/AppIcon.png --out AppIcon.iconset/icon_32x32.png
-        sips -z 64 64     src/assets/AppIcon.png --out AppIcon.iconset/icon_32x32@2x.png
-        sips -z 128 128   src/assets/AppIcon.png --out AppIcon.iconset/icon_128x128.png
-        sips -z 256 256   src/assets/AppIcon.png --out AppIcon.iconset/icon_128x128@2x.png
-        sips -z 256 256   src/assets/AppIcon.png --out AppIcon.iconset/icon_256x256.png
-        sips -z 512 512   src/assets/AppIcon.png --out AppIcon.iconset/icon_256x256@2x.png
-        sips -z 512 512   src/assets/AppIcon.png --out AppIcon.iconset/icon_512x512.png
-        sips -z 1024 1024 src/assets/AppIcon.png --out AppIcon.iconset/icon_512x512@2x.png
+        for size in 16 32 128 256 512; do
+          sips -z $size $size src/assets/AppIcon.png --out AppIcon.iconset/icon_${size}x${size}.png
+          if [ $size -lt 512 ]; then
+            sips -z $((size*2)) $((size*2)) src/assets/AppIcon.png --out AppIcon.iconset/icon_${size}x${size}@2x.png
+          fi
+        done
         # Create icns file
         iconutil -c icns AppIcon.iconset
         mv AppIcon.icns src/assets/
 
     - name: Create DMG Background
       run: |
-        # Create background image with installation instructions
+        mkdir -p src/assets
+        # Create background with visual installation guide
         convert -size 800x400 xc:white \
-          -font Helvetica -pointsize 14 \
-          -draw "text 250,200 'Drag TalkToMe to Applications to install'" \
-          -draw "line 300,180 550,180" \
-          -draw "line 550,180 540,170" \
-          -draw "line 550,180 540,190" \
+          -font Helvetica -pointsize 24 -gravity center \
+          -draw "text 0,-100 'Install TalkToMe'" \
+          -pointsize 14 \
+          -draw "text 0,-50 'Drag TalkToMe to Applications folder to install'" \
+          -draw "image over 200,150 64,64 'src/assets/AppIcon.png'" \
+          -draw "image over 536,150 64,64 'system:Applications.icns'" \
+          -draw "path 'M 264,182 L 536,182 L 526,172 M 536,182 L 526,192'" \
           src/assets/background.png
 
     - name: Build App Bundle
       run: |
-        chmod +x build_mac_app.sh create_dmg.sh
-        ./build_mac_app.sh
-        ./create_dmg.sh
+        # Build the app bundle
+        python setup.py py2app
+
+    - name: Create DMG
+      run: |
+        # Create a temporary directory for DMG creation
+        TEMP_DIR=$(mktemp -d)
+        mkdir -p "$TEMP_DIR/TalkToMe"
+
+        # Copy the .app bundle
+        cp -r "dist/TalkToMe.app" "$TEMP_DIR/TalkToMe/"
+
+        # Create the DMG with visual installation guide
+        create-dmg \
+          --volname "TalkToMe" \
+          --volicon "src/assets/AppIcon.icns" \
+          --background "src/assets/background.png" \
+          --window-pos 200 120 \
+          --window-size 800 400 \
+          --icon-size 100 \
+          --icon "TalkToMe.app" 200 190 \
+          --app-drop-link 600 185 \
+          --no-internet-enable \
+          "dist/TalkToMe.dmg" \
+          "$TEMP_DIR/TalkToMe/"
 
     - name: Create Release
       if: startsWith(github.ref, 'refs/tags/')
@@ -67,15 +103,20 @@ jobs:
       with:
         files: dist/TalkToMe.dmg
         body: |
-          TalkToMe Voice-to-Text Application
+          # TalkToMe Voice-to-Text Application
 
-          Installation:
+          ## Installation
           1. Download TalkToMe.dmg
-          2. Open the DMG file
-          3. Drag TalkToMe to your Applications folder
+          2. Double-click the downloaded file to open it
+          3. Drag TalkToMe into your Applications folder
           4. Launch TalkToMe from Applications
 
-          Features:
+          ## First Launch
+          - The app will automatically request necessary permissions
+          - Grant microphone access when prompted
+          - Grant accessibility access when prompted
+
+          ## Features
           - Voice-to-text with whisper support
           - System-wide text input
           - Support for quiet speech
