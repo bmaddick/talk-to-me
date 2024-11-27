@@ -1,7 +1,7 @@
 from setuptools import setup
 
 APP = ['src/main.py']
-DATA_FILES = []
+DATA_FILES = [('assets', ['src/assets/AppIcon.icns', 'src/assets/background.png'])]
 OPTIONS = {
     'argv_emulation': False,  # Disable argv emulation for better Mac integration
     'packages': [
