@@ -23,6 +23,12 @@ jobs:
         brew install create-dmg
         brew install portaudio
         brew install imagemagick
+        # Verify PortAudio installation and set environment variables
+        echo "PORTAUDIO_PATH=$(brew --prefix portaudio)"
+        export DYLD_LIBRARY_PATH="$(brew --prefix)/lib:$DYLD_LIBRARY_PATH"
+        export LIBRARY_PATH="$(brew --prefix)/lib:$LIBRARY_PATH"
+        export PKG_CONFIG_PATH="$(brew --prefix)/lib/pkgconfig:$PKG_CONFIG_PATH"
+        ls -la $(brew --prefix portaudio)/lib/
 
     - name: Install Python Dependencies
       run: |
