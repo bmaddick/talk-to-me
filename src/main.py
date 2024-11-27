@@ -22,6 +22,7 @@ def main():
             # If we got text, simulate typing it
             if text:
                 input_simulator.type_text(text)
+                input_simulator.press_key('enter')
 
     except KeyboardInterrupt:
         print("\nStopping Talk To Me...")
