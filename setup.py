@@ -18,7 +18,7 @@ OPTIONS = {
     ],
     'excludes': ['matplotlib', 'tkinter', 'PyQt5', 'wx', 'test', 'sphinx', 'sqlalchemy', 'pandas', 'pygame'],
     'frameworks': [
-        './build/frameworks/libportaudio.2.dylib',
+        'build/frameworks/libportaudio.2.dylib',  # Remove leading ./ for more reliable path resolution
         '/System/Library/Frameworks/CoreAudio.framework',
         '/System/Library/Frameworks/AudioToolbox.framework',
         '/System/Library/Frameworks/AVFoundation.framework',

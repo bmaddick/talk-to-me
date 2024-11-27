@@ -23,13 +23,23 @@ export PKG_CONFIG_PATH="/opt/homebrew/lib/pkgconfig:/usr/local/lib/pkgconfig:$PK
 # Create temporary frameworks directory
 mkdir -p build/frameworks
 
-# Copy PortAudio framework to temporary location
-if [ -f "/opt/homebrew/lib/libportaudio.2.dylib" ]; then
-    cp /opt/homebrew/lib/libportaudio.2.dylib build/frameworks/
-elif [ -f "/usr/local/lib/libportaudio.2.dylib" ]; then
-    cp /usr/local/lib/libportaudio.2.dylib build/frameworks/
-else
-    echo "Error: Could not find libportaudio.2.dylib"
+# Find and copy PortAudio framework
+PORTAUDIO_PATHS=(
+    "/opt/homebrew/lib/libportaudio.2.dylib"
+    "/usr/local/lib/libportaudio.2.dylib"
+    "/opt/homebrew/Cellar/portaudio/19.7.0/lib/libportaudio.2.dylib"
+)
+
+for path in "${PORTAUDIO_PATHS[@]}"; do
+    if [ -f "$path" ]; then
+        echo "Found PortAudio at: $path"
+        cp "$path" build/frameworks/
+        break
+    fi
+done
+
+if [ ! -f "build/frameworks/libportaudio.2.dylib" ]; then
+    echo "Error: Could not find libportaudio.2.dylib in any of the expected locations"
     exit 1
 fi
 
