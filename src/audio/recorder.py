@@ -10,6 +10,7 @@ class AudioRecorder:
                  chunk_size: int = 1024,
                  channels: int = 1,
                  format_type: int = pyaudio.paFloat32):
+        """Initialize audio recorder with configurable parameters."""
         self.rate = rate
         self.chunk_size = chunk_size
         self.channels = channels
