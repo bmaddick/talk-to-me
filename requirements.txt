@@ -3,3 +3,4 @@ PyAudio==0.2.14
 PyAutoGUI==0.9.54
 pyobjc-core>=10.0; platform_system=="Darwin"
 pyobjc>=10.0; platform_system=="Darwin"
+py2app
