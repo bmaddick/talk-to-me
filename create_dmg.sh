@@ -1,33 +1,43 @@
 #!/bin/bash
+set -e
 
 # Ensure the DMG creation tools are installed
-brew install create-dmg
+if ! command -v create-dmg &> /dev/null; then
+    brew install create-dmg
+fi
 
 # Build the app bundle first
 ./build_mac_app.sh
 
 # Create a temporary directory for DMG creation
 TEMP_DIR=$(mktemp -d)
-mkdir -p "$TEMP_DIR/TalkToMe"
+DMG_DIR="$TEMP_DIR/TalkToMe"
+mkdir -p "$DMG_DIR"
 
 # Copy the .app bundle
-cp -r "dist/TalkToMe.app" "$TEMP_DIR/TalkToMe/"
+cp -r "dist/TalkToMe.app" "$DMG_DIR/"
 
-# Create the DMG with Applications folder shortcut and background
+# Create symlink to Applications folder
+ln -s /Applications "$DMG_DIR/Applications"
+
+# Create the DMG with custom appearance
 create-dmg \
-  --volname "TalkToMe" \
+  --volname "TalkToMe Installer" \
   --volicon "src/assets/AppIcon.icns" \
   --background "src/assets/background.png" \
   --window-pos 200 120 \
   --window-size 800 400 \
   --icon-size 100 \
   --icon "TalkToMe.app" 200 190 \
+  --hide-extension "TalkToMe.app" \
   --app-drop-link 600 185 \
+  --format UDZO \
   --no-internet-enable \
+  --skip-jenkins \
   "dist/TalkToMe.dmg" \
-  "$TEMP_DIR/TalkToMe/"
+  "$DMG_DIR"
 
 # Cleanup
 rm -rf "$TEMP_DIR"
 
-echo "Created TalkToMe.dmg with drag-and-drop installation interface"
+echo "Created TalkToMe.dmg with standard Mac installer interface"
