@@ -3,6 +3,12 @@
 # Run installer
 ./install.sh
 
+# Clean previous builds
+rm -rf build dist
+
+# Create icns file from iconset
+iconutil -c icns AppIcon.iconset
+
 # Build Mac app
 python3 setup.py py2app
 
