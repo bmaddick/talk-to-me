@@ -8,11 +8,23 @@ DATA_FILES = [('assets', ['src/assets/AppIcon.icns', 'src/assets/background.png'
 OPTIONS = {
     'argv_emulation': False,  # Disable argv emulation for better Mac integration
     'iconfile': 'src/assets/AppIcon.icns',
-    'packages': ['numpy', 'whisper', 'pyaudio'],  # Explicitly list required packages
-    'includes': ['numpy', 'whisper', 'pyaudio', 'pyautogui'],  # Include specific modules
-    'excludes': ['matplotlib', 'tkinter', 'PyQt5', 'wx', 'test', 'sphinx', 'sqlalchemy', 'pandas', 'pygame'],  # Exclude unnecessary packages
-    'frameworks': ['libportaudio.2.dylib'],  # Include required system libraries
-    'resources': ['src/assets'],  # Include assets
+    'packages': [
+        'numpy', 'whisper', 'pyaudio', 'openai_whisper', 'tiktoken', 'torch',
+        'regex', 'tqdm', 'more_itertools', 'requests', 'typing_extensions'
+    ],
+    'includes': [
+        'numpy', 'whisper', 'pyaudio', 'pyautogui', 'openai_whisper',
+        'tiktoken', 'torch', 'regex', 'tqdm'
+    ],
+    'excludes': ['matplotlib', 'tkinter', 'PyQt5', 'wx', 'test', 'sphinx', 'sqlalchemy', 'pandas', 'pygame'],
+    'frameworks': [
+        'libportaudio.2.dylib',
+        '/System/Library/Frameworks/CoreAudio.framework',
+        '/System/Library/Frameworks/AudioToolbox.framework',
+        '/System/Library/Frameworks/AVFoundation.framework',
+        '/System/Library/Frameworks/ApplicationServices.framework'
+    ],
+    'resources': ['src/assets'],
     'strip': True,  # Strip debug symbols to reduce size
     'plist': {
         'CFBundleName': 'TalkToMe',
