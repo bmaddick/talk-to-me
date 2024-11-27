@@ -18,7 +18,8 @@ OPTIONS = {
     ],
     'excludes': ['matplotlib', 'tkinter', 'PyQt5', 'wx', 'test', 'sphinx', 'sqlalchemy', 'pandas', 'pygame'],
     'frameworks': [
-        'libportaudio.2.dylib',
+        '/usr/local/lib/libportaudio.2.dylib',
+        '/opt/homebrew/lib/libportaudio.2.dylib',
         '/System/Library/Frameworks/CoreAudio.framework',
         '/System/Library/Frameworks/AudioToolbox.framework',
         '/System/Library/Frameworks/AVFoundation.framework',
