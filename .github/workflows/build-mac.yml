@@ -28,6 +28,7 @@ jobs:
       run: |
         python -m pip install --upgrade pip setuptools wheel
         python -m pip install -r requirements.txt
+        python -m pip install py2app
 
     - name: Create App Icon
       run: |
@@ -69,22 +70,43 @@ jobs:
     - name: Build App and Create DMG
       run: |
         chmod +x build_mac_app.sh create_dmg.sh
+        ./build_mac_app.sh
         ./create_dmg.sh
+
+    - name: Upload DMG Artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: TalkToMe-Installer
+        path: dist/TalkToMe.dmg
 
     - name: Create Release
       if: startsWith(github.ref, 'refs/tags/')
       uses: softprops/action-gh-release@v1
       with:
         files: dist/TalkToMe.dmg
+        prerelease: false
+        draft: false
+        fail_on_unmatched_files: true
+        generate_release_notes: false
         body: |
-          # TalkToMe Installation Instructions
+          # TalkToMe Voice-to-Text Application
 
-          1. Download TalkToMe.dmg
-          2. Open the DMG file
-          3. Drag TalkToMe into your Applications folder
+          ## Download and Installation
+          1. Click the `TalkToMe.dmg` file below to download
+          2. Double-click the downloaded DMG file
+          3. In the window that appears, drag TalkToMe into your Applications folder
           4. Open TalkToMe from Applications
           5. Grant permissions when prompted
 
-          The app will automatically request necessary permissions for microphone and accessibility access.
+          ## Features
+          - Voice-to-text for any application
+          - Supports whispering and quiet speech
+          - Automatic permission handling
+          - Easy drag-and-drop installation
+
+          ## System Requirements
+          - macOS 10.13 or later
+          - Microphone access
+          - Accessibility permissions (automatically requested)
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
