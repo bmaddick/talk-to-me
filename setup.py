@@ -18,15 +18,16 @@ OPTIONS = {
     ],
     'excludes': ['matplotlib', 'tkinter', 'PyQt5', 'wx', 'test', 'sphinx', 'sqlalchemy', 'pandas', 'pygame'],
     'frameworks': [
-        '/usr/local/lib/libportaudio.2.dylib',  # Primary location
-        '/opt/homebrew/lib/libportaudio.2.dylib',  # Apple Silicon location
-        'build/frameworks/libportaudio.2.dylib',  # Fallback location
+        '/opt/homebrew/lib/libportaudio.2.dylib',  # Apple Silicon
+        '/usr/local/lib/libportaudio.2.dylib',     # Intel Mac
+        '/opt/homebrew/Cellar/portaudio/19.7.0/lib/libportaudio.2.dylib',  # Homebrew specific
         '/System/Library/Frameworks/CoreAudio.framework',
         '/System/Library/Frameworks/AudioToolbox.framework',
         '/System/Library/Frameworks/AVFoundation.framework',
         '/System/Library/Frameworks/ApplicationServices.framework'
     ],
     'resources': ['src/assets'],
+    'dylib_excludes': ['libgfortran.3.dylib', 'libquadmath.0.dylib', 'libgcc_s.1.dylib'],
     'strip': True,  # Strip debug symbols to reduce size
     'plist': {
         'CFBundleName': 'TalkToMe',
