@@ -21,14 +21,20 @@ jobs:
     - name: Install System Dependencies
       run: |
         brew install create-dmg
+        brew uninstall --ignore-dependencies portaudio || true
         brew install portaudio
-        brew install imagemagick
-        # Verify PortAudio installation and set environment variables
-        echo "PORTAUDIO_PATH=$(brew --prefix portaudio)"
-        export DYLD_LIBRARY_PATH="$(brew --prefix)/lib:$DYLD_LIBRARY_PATH"
-        export LIBRARY_PATH="$(brew --prefix)/lib:$LIBRARY_PATH"
-        export PKG_CONFIG_PATH="$(brew --prefix)/lib/pkgconfig:$PKG_CONFIG_PATH"
-        ls -la $(brew --prefix portaudio)/lib/
+        brew link --force portaudio
+
+        # Set up and verify PortAudio paths
+        PORTAUDIO_PREFIX=$(brew --prefix portaudio)
+        echo "PORTAUDIO_PATH=$PORTAUDIO_PREFIX" >> $GITHUB_ENV
+        echo "DYLD_LIBRARY_PATH=$PORTAUDIO_PREFIX/lib:$DYLD_LIBRARY_PATH" >> $GITHUB_ENV
+        echo "LIBRARY_PATH=$PORTAUDIO_PREFIX/lib:$LIBRARY_PATH" >> $GITHUB_ENV
+        echo "PKG_CONFIG_PATH=$PORTAUDIO_PREFIX/lib/pkgconfig:$PKG_CONFIG_PATH" >> $GITHUB_ENV
+
+        # Verify installation
+        ls -la $PORTAUDIO_PREFIX/lib/
+        pkg-config --libs --cflags portaudio-2.0
 
     - name: Install Python Dependencies
       run: |
