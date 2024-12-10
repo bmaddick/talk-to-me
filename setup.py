@@ -18,9 +18,7 @@ OPTIONS = {
     ],
     'excludes': ['matplotlib', 'tkinter', 'PyQt5', 'wx', 'test', 'sphinx', 'sqlalchemy', 'pandas', 'pygame'],
     'frameworks': [
-        '/opt/homebrew/lib/libportaudio.2.dylib',  # Apple Silicon
-        '/usr/local/lib/libportaudio.2.dylib',     # Intel Mac
-        '/opt/homebrew/Cellar/portaudio/19.7.0/lib/libportaudio.2.dylib',  # Homebrew specific
+        'build/frameworks/libportaudio.2.dylib',  # Use our bundled copy
         '/System/Library/Frameworks/CoreAudio.framework',
         '/System/Library/Frameworks/AudioToolbox.framework',
         '/System/Library/Frameworks/AVFoundation.framework',
@@ -34,8 +32,8 @@ OPTIONS = {
         'CFBundleDisplayName': 'TalkToMe',
         'CFBundleGetInfoString': "Voice to text for any application",
         'CFBundleIdentifier': "com.bmaddick.talktome",
-        'CFBundleVersion': "0.1.6",
-        'CFBundleShortVersionString': "0.1.6",
+        'CFBundleVersion': "0.1.8",
+        'CFBundleShortVersionString': "0.1.8",
         'LSMinimumSystemVersion': '10.13.0',  # Minimum macOS version
         'NSMicrophoneUsageDescription': 'TalkToMe needs microphone access to convert your speech to text.',
         'NSAppleEventsUsageDescription': 'TalkToMe needs accessibility access to type text in any application.',
@@ -45,6 +43,8 @@ OPTIONS = {
         'CFBundleIconFile': 'AppIcon',
         'CFBundleDocumentTypes': [],  # Ensures proper app bundle handling
         'CFBundlePackageType': 'APPL',  # Explicitly mark as application
+        'NSRequiresAquaSystemAppearance': True,  # Ensure proper Mac app appearance
+        'LSApplicationCategoryType': 'public.app-category.productivity',  # Set app category
     }
 }
 
