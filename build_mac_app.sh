@@ -20,16 +20,28 @@ export CFLAGS="-I/opt/homebrew/include -I/usr/local/include"
 export LDFLAGS="-L/opt/homebrew/lib -L/usr/local/lib"
 export PKG_CONFIG_PATH="/opt/homebrew/lib/pkgconfig:/usr/local/lib/pkgconfig:$PKG_CONFIG_PATH"
 
-# Ensure PortAudio framework is properly linked
-mkdir -p dist/TalkToMe.app/Contents/Frameworks/
+# Create temporary frameworks directory
+mkdir -p build/frameworks
+
+# Copy PortAudio framework to temporary location
 if [ -f "/opt/homebrew/lib/libportaudio.2.dylib" ]; then
-    cp /opt/homebrew/lib/libportaudio.2.dylib dist/TalkToMe.app/Contents/Frameworks/
+    cp /opt/homebrew/lib/libportaudio.2.dylib build/frameworks/
 elif [ -f "/usr/local/lib/libportaudio.2.dylib" ]; then
-    cp /usr/local/lib/libportaudio.2.dylib dist/TalkToMe.app/Contents/Frameworks/
+    cp /usr/local/lib/libportaudio.2.dylib build/frameworks/
+else
+    echo "Error: Could not find libportaudio.2.dylib"
+    exit 1
 fi
+
+# Update DYLD_LIBRARY_PATH to include our temporary frameworks
+export DYLD_LIBRARY_PATH="$(pwd)/build/frameworks:$DYLD_LIBRARY_PATH"
 
 # Build Mac app with py2app
 python3 setup.py py2app
+
+# Copy frameworks to final location
+mkdir -p dist/TalkToMe.app/Contents/Frameworks/
+cp build/frameworks/* dist/TalkToMe.app/Contents/Frameworks/
 
 # Verify the app bundle was created
 if [ ! -d "dist/TalkToMe.app" ]; then
