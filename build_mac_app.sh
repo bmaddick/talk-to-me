@@ -9,11 +9,14 @@ rm -rf build dist
 # Ensure assets directory exists
 mkdir -p src/assets
 
-# Install PortAudio using Homebrew
-echo "Installing PortAudio..."
+# Install and configure PortAudio
+echo "Installing and configuring PortAudio..."
+brew uninstall --ignore-dependencies portaudio || true
 brew install portaudio
+brew link --force portaudio
 
 # Install dependencies with PEP 517
+python3 -m pip install --upgrade pip setuptools wheel
 python3 -m pip install --use-pep517 -r requirements.txt
 python3 -m pip install --use-pep517 py2app
 
