@@ -52,8 +52,12 @@ jobs:
         rm -rf src/assets
         mkdir -p src/assets
 
-        # Create a white background image using base64-encoded PNG data
-        echo 'iVBORw0KGgoAAAANSUhEUgAAAyAAAAMgAQAAAAA3TjKYAAAABlBMVEX///8AAABVwtN+AAAACXBIWXMAAA7EAAAOxAGVKw4bAAAANklEQVR4nO3BMQEAAADCoPVP7WsIoAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAeAN1+AABVhDU2QAAAABJRU5ErkJggg==' | base64 -d > src/assets/background.png
+        # Create a white background for DMG using sips
+        mkdir -p src/assets
+        touch src/assets/background.png
+        sips -s format png src/assets/background.png --out src/assets/background.png
+        sips -z 400 800 src/assets/background.png
+        sips -s format png -s formatOptions 100 src/assets/background.png
 
         # Use system app icon
         cp /System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/GenericApplicationIcon.icns src/assets/AppIcon.icns
