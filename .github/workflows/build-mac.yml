@@ -22,19 +22,17 @@ jobs:
       run: |
         # Install PortAudio
         brew install portaudio
-        PORTAUDIO_PATH=$(brew --prefix portaudio)
-        PORTAUDIO_LIB="$PORTAUDIO_PATH/lib/libportaudio.2.dylib"
-        echo "PORTAUDIO_PATH=$PORTAUDIO_PATH" >> $GITHUB_ENV
-        echo "PORTAUDIO_LIB=$PORTAUDIO_LIB" >> $GITHUB_ENV
 
-        # Create Frameworks directory
-        mkdir -p Frameworks
-        cp "$PORTAUDIO_LIB" Frameworks/
-        chmod +x Frameworks/libportaudio.2.dylib
-        install_name_tool -id "@rpath/libportaudio.2.dylib" Frameworks/libportaudio.2.dylib
+        # Prepare PortAudio framework
+        chmod +x prepare_framework.sh
+        ./prepare_framework.sh
 
-        # Verify library setup
-        otool -L Frameworks/libportaudio.2.dylib
+        # Move framework to proper location
+        mkdir -p dist/TalkToMe.app/Contents/Frameworks
+        cp -R PortAudio.framework dist/TalkToMe.app/Contents/Frameworks/
+
+        # Verify framework setup
+        otool -L dist/TalkToMe.app/Contents/Frameworks/PortAudio.framework/Versions/Current/PortAudio
 
     - name: Create App Assets
       run: |
@@ -64,27 +62,26 @@ jobs:
         python -c "
         import pyaudio, os
         print('PyAudio:', pyaudio.__file__)
-        print('PortAudio lib exists:', os.path.exists('Frameworks/libportaudio.2.dylib'))
+        print('Framework exists:', os.path.exists('dist/TalkToMe.app/Contents/Frameworks/PortAudio.framework'))
         "
 
     - name: Build App
       run: |
-        # Clean previous builds
-        rm -rf dist build
+        # Clean previous builds if they exist
+        rm -rf build
 
-        # Copy Frameworks to app bundle
-        mkdir -p dist/TalkToMe.app/Contents/Frameworks
-        cp Frameworks/libportaudio.2.dylib dist/TalkToMe.app/Contents/Frameworks/
+        # Set environment variables for build
+        export DYLD_FRAMEWORK_PATH="$PWD/dist/TalkToMe.app/Contents/Frameworks:$DYLD_FRAMEWORK_PATH"
+        export DYLD_LIBRARY_PATH="$PWD/dist/TalkToMe.app/Contents/Frameworks:$DYLD_LIBRARY_PATH"
 
         # Build with verbose output
-        DYLD_LIBRARY_PATH="$PWD/Frameworks:$DYLD_LIBRARY_PATH" \
         PYTHONPATH="$PWD" python setup.py py2app -vv
 
-        # Fix library references in PyAudio extension
+        # Fix PyAudio extension references
         PYAUDIO_SO=$(find dist/TalkToMe.app -name "_portaudio.so")
         if [ -n "$PYAUDIO_SO" ]; then
-          install_name_tool -change "$PORTAUDIO_LIB" \
-            "@rpath/libportaudio.2.dylib" "$PYAUDIO_SO"
+          install_name_tool -change "@rpath/libportaudio.2.dylib" \
+            "@rpath/PortAudio.framework/Versions/Current/PortAudio" "$PYAUDIO_SO"
         fi
 
         # Verify app bundle

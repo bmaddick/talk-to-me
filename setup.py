@@ -1,5 +1,6 @@
 import sys
 import os
+import subprocess
 from setuptools import setup
 
 sys.setrecursionlimit(5000)
@@ -9,24 +10,15 @@ DATA_FILES = [
     ('assets', ['src/assets/AppIcon.icns', 'src/assets/background.png'])
 ]
 
-# Get PortAudio path from environment or use default Homebrew location
-PORTAUDIO_PATH = os.getenv('PORTAUDIO_PATH', '/opt/homebrew/opt/portaudio')
-PORTAUDIO_LIB = os.path.join(PORTAUDIO_PATH, 'lib', 'libportaudio.2.dylib')
+# Get PortAudio library path from brew
+try:
+    PORTAUDIO_PATH = subprocess.check_output(['brew', '--prefix', 'portaudio']).decode().strip()
+    PORTAUDIO_LIB = os.path.join(PORTAUDIO_PATH, 'lib', 'libportaudio.2.dylib')
+except:
+    PORTAUDIO_LIB = '/usr/local/lib/libportaudio.2.dylib'
 
 if not os.path.exists(PORTAUDIO_LIB):
-    print(f"Warning: PortAudio library not found at {PORTAUDIO_LIB}")
-    print("Searching in common locations...")
-    common_paths = [
-        '/usr/local/lib/libportaudio.2.dylib',
-        '/opt/local/lib/libportaudio.2.dylib',
-        '/usr/lib/libportaudio.2.dylib'
-    ]
-    for path in common_paths:
-        if os.path.exists(path):
-            PORTAUDIO_LIB = path
-            break
-    else:
-        raise ValueError("Could not find PortAudio library in any common location")
+    raise ValueError(f"PortAudio library not found at {PORTAUDIO_LIB}")
 
 print(f"Using PortAudio library at: {PORTAUDIO_LIB}")
 
@@ -37,7 +29,8 @@ OPTIONS = {
     'includes': ['numpy', 'whisper', 'pyautogui'],
     'excludes': ['matplotlib', 'tkinter', 'PyQt5', 'wx', 'test'],
     'resources': ['src/assets'],
-    'site_packages': True,  # Include all site-packages
+    'frameworks': [PORTAUDIO_LIB],
+    'binary_includes': [PORTAUDIO_LIB],
     'strip': True,
     'plist': {
         'CFBundleName': 'TalkToMe',
