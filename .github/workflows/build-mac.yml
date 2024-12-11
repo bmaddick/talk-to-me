@@ -18,12 +18,12 @@ jobs:
       with:
         python-version: '3.11'
 
-    - name: Install PortAudio
+    - name: Install and Configure PortAudio
       run: |
-        # Install PortAudio using Homebrew
+        # Install PortAudio
         brew install portaudio
 
-        # Create direct library link
+        # Create lib directory and copy library
         mkdir -p lib
         cp $(brew --prefix portaudio)/lib/libportaudio.2.dylib lib/
         chmod +x lib/libportaudio.2.dylib
@@ -32,19 +32,19 @@ jobs:
         install_name_tool -id "@executable_path/../Frameworks/libportaudio.2.dylib" lib/libportaudio.2.dylib
 
         # Debug output
+        echo "Library details:"
         otool -L lib/libportaudio.2.dylib
 
     - name: Install Dependencies
       run: |
         python -m pip install --upgrade pip setuptools wheel
 
-        # Install PyAudio with direct library path
+        # Set library paths for PyAudio installation
         export LIBRARY_PATH="$PWD/lib:$LIBRARY_PATH"
         export DYLD_LIBRARY_PATH="$PWD/lib:$DYLD_LIBRARY_PATH"
-        pip install --no-cache-dir pyaudio
 
-        # Install remaining dependencies
-        pip install --use-pep517 rubicon-objc py2app
+        # Install dependencies with PEP 517
+        pip install --use-pep517 rubicon-objc py2app pyaudio
         pip install -r requirements.txt
 
     - name: Build App
@@ -52,12 +52,18 @@ jobs:
         # Clean previous builds
         rm -rf dist build
 
-        # Set library path for build
-        export DYLD_LIBRARY_PATH="$PWD/lib:$DYLD_LIBRARY_PATH"
+        # Set library paths for build
         export LIBRARY_PATH="$PWD/lib:$LIBRARY_PATH"
+        export DYLD_LIBRARY_PATH="$PWD/lib:$DYLD_LIBRARY_PATH"
+
+        # Create app bundle structure
+        mkdir -p dist/TalkToMe.app/Contents/{Frameworks,MacOS,Resources}
 
         # Build with verbose output
         python setup.py py2app -vv
+
+        # Copy PortAudio library to Frameworks
+        cp lib/libportaudio.2.dylib dist/TalkToMe.app/Contents/Frameworks/
 
         # Debug output
         echo "App bundle contents:"

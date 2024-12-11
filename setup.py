@@ -2,6 +2,7 @@
 Setup script for building the TalkToMe application.
 """
 import os
+import sys
 from setuptools import setup
 
 APP = ['src/main.py']
@@ -9,18 +10,30 @@ DATA_FILES = [
     ('assets', ['src/assets/AppIcon.icns']),
 ]
 
-# Simplified package configuration
+# Ensure lib directory exists
+lib_dir = os.path.join(os.getcwd(), 'lib')
+if not os.path.exists(lib_dir):
+    print("Error: lib directory not found. Please run prepare_library.sh first.")
+    sys.exit(1)
+
+# Check for PortAudio library
+portaudio_lib = os.path.join(lib_dir, 'libportaudio.2.dylib')
+if not os.path.exists(portaudio_lib):
+    print("Error: PortAudio library not found. Please run prepare_library.sh first.")
+    sys.exit(1)
+
 OPTIONS = {
     'argv_emulation': False,
     'iconfile': 'src/assets/AppIcon.icns',
-    'packages': ['rubicon'],  # Minimal required packages
+    'packages': ['rubicon'],
     'includes': [
         'pyaudio',
         'numpy.core.multiarray',
         'whisper'
     ],
     'excludes': ['matplotlib', 'tkinter', 'wx'],
-    'frameworks': [],  # Will be populated if PortAudio is found
+    'frameworks': [portaudio_lib],
+    'dylib_excludes': ['libportaudio.2.dylib'],  # Exclude system-wide PortAudio
     'plist': {
         'CFBundleName': 'TalkToMe',
         'CFBundleDisplayName': 'TalkToMe',
@@ -32,11 +45,6 @@ OPTIONS = {
         'NSRequiresAquaSystemAppearance': False,
     }
 }
-
-# Add PortAudio framework if available
-portaudio_path = os.path.join(os.getcwd(), 'PortAudio.framework')
-if os.path.exists(portaudio_path):
-    OPTIONS['frameworks'].append(portaudio_path)
 
 setup(
     name='TalkToMe',
