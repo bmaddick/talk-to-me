@@ -30,16 +30,19 @@ jobs:
         echo "DYLD_LIBRARY_PATH=$PORTAUDIO_PREFIX/lib:$DYLD_LIBRARY_PATH" >> $GITHUB_ENV
         echo "LIBRARY_PATH=$PORTAUDIO_PREFIX/lib:$LIBRARY_PATH" >> $GITHUB_ENV
 
+        # Debug: Show library locations
+        echo "PortAudio library location:"
+        ls -l "$PORTAUDIO_PREFIX/lib/libportaudio.2.dylib"
+
         # Create frameworks directory and copy PortAudio
         mkdir -p build/frameworks
         cp "$PORTAUDIO_PREFIX/lib/libportaudio.2.dylib" build/frameworks/
         chmod +x build/frameworks/libportaudio.2.dylib
 
-        # Fix library install name and verify
-        install_name_tool -id "@executable_path/../Frameworks/libportaudio.2.dylib" build/frameworks/libportaudio.2.dylib
-        install_name_tool -change "/opt/homebrew/opt/portaudio/lib/libportaudio.2.dylib" "@executable_path/../Frameworks/libportaudio.2.dylib" build/frameworks/libportaudio.2.dylib
+        # Fix library install name
+        install_name_tool -id "@rpath/libportaudio.2.dylib" build/frameworks/libportaudio.2.dylib
 
-        # Verify setup
+        # Debug: Verify library setup
         otool -L build/frameworks/libportaudio.2.dylib
 
     - name: Install Python Dependencies
