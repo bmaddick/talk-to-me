@@ -20,20 +20,25 @@ jobs:
 
     - name: Install and Configure PortAudio
       run: |
+        # Install PortAudio
         brew install portaudio
         PORTAUDIO_PREFIX=$(brew --prefix portaudio)
         PORTAUDIO_LIB="$PORTAUDIO_PREFIX/lib/libportaudio.2.dylib"
 
+        # Debug output
+        echo "PortAudio prefix: $PORTAUDIO_PREFIX"
+        echo "PortAudio library: $PORTAUDIO_LIB"
+        ls -l "$PORTAUDIO_LIB"
+
         # Create lib directory and copy PortAudio
         mkdir -p lib
-        cp "$PORTAUDIO_LIB" lib/
+        cp -v "$PORTAUDIO_LIB" lib/
         chmod 755 lib/libportaudio.2.dylib
 
-        # Set environment variables for build
-        echo "DYLD_LIBRARY_PATH=$PWD/lib:$DYLD_LIBRARY_PATH" >> $GITHUB_ENV
-        echo "LIBRARY_PATH=$PWD/lib:$LIBRARY_PATH" >> $GITHUB_ENV
-        echo "LDFLAGS=-L$PWD/lib" >> $GITHUB_ENV
-        echo "CFLAGS=-I$PORTAUDIO_PREFIX/include" >> $GITHUB_ENV
+        # Debug library location
+        echo "Copied PortAudio library:"
+        ls -l lib/
+        otool -L lib/libportaudio.2.dylib
 
     - name: Install Dependencies
       run: |
@@ -41,8 +46,15 @@ jobs:
         pip install --use-pep517 rubicon-objc
         pip install --use-pep517 py2app
 
-        # Install PyAudio with PortAudio path
-        pip install --use-pep517 pyaudio
+        # Set environment variables for PyAudio installation
+        export PORTAUDIO_PATH="$PWD/lib"
+        export DYLD_LIBRARY_PATH="$PORTAUDIO_PATH:$DYLD_LIBRARY_PATH"
+        export LIBRARY_PATH="$PORTAUDIO_PATH:$LIBRARY_PATH"
+        export CFLAGS="-I$(brew --prefix portaudio)/include"
+        export LDFLAGS="-L$PORTAUDIO_PATH"
+
+        # Install PyAudio with verbose output
+        pip install --verbose --use-pep517 pyaudio
 
         # Install remaining dependencies
         pip install -r requirements.txt
