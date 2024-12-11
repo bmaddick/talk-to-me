@@ -10,24 +10,17 @@ DATA_FILES = [
     ('assets', ['src/assets/AppIcon.icns', 'src/assets/background.png'])
 ]
 
-def get_portaudio_lib():
-    """Get PortAudio library path with fallbacks."""
+# Get PortAudio library path
+def get_portaudio_path():
     try:
-        # Try to get from environment first
-        if 'PORTAUDIO_LIB' in os.environ:
-            lib_path = os.environ['PORTAUDIO_LIB']
-            if os.path.exists(lib_path):
-                return lib_path
-
-        # Try Homebrew
-        brew_prefix = subprocess.check_output(['brew', '--prefix', 'portaudio']).decode().strip()
-        lib_path = os.path.join(brew_prefix, 'lib', 'libportaudio.2.dylib')
+        portaudio_path = subprocess.check_output(['brew', '--prefix', 'portaudio']).decode().strip()
+        lib_path = os.path.join(portaudio_path, 'lib', 'libportaudio.2.dylib')
         if os.path.exists(lib_path):
             return lib_path
     except:
         pass
 
-    # Check common locations
+    # Check common locations as fallback
     common_paths = [
         '/usr/local/lib/libportaudio.2.dylib',
         '/opt/homebrew/lib/libportaudio.2.dylib',
@@ -36,14 +29,14 @@ def get_portaudio_lib():
     for path in common_paths:
         if os.path.exists(path):
             return path
-
     return None
 
-PORTAUDIO_LIB = get_portaudio_lib()
-if not PORTAUDIO_LIB:
-    print("Warning: PortAudio library not found. Build may fail.")
-else:
-    print(f"Found PortAudio library at: {PORTAUDIO_LIB}")
+portaudio_path = get_portaudio_path()
+if not portaudio_path:
+    print("Error: PortAudio library not found")
+    sys.exit(1)
+
+print(f"Using PortAudio from: {portaudio_path}")
 
 OPTIONS = {
     'argv_emulation': False,
@@ -52,7 +45,8 @@ OPTIONS = {
     'includes': ['numpy', 'whisper', 'pyautogui'],
     'excludes': ['matplotlib', 'tkinter', 'PyQt5', 'wx', 'test'],
     'resources': ['src/assets'],
-    'frameworks': [PORTAUDIO_LIB] if PORTAUDIO_LIB else [],
+    'dylib_excludes': ['libportaudio.2.dylib'],  # Exclude from automatic detection
+    'frameworks': [portaudio_path],  # Add explicitly
     'strip': True,
     'plist': {
         'CFBundleName': 'TalkToMe',
