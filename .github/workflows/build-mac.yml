@@ -25,18 +25,27 @@ jobs:
         PORTAUDIO_PATH=$(brew --prefix portaudio)
         echo "PORTAUDIO_PATH=$PORTAUDIO_PATH" >> $GITHUB_ENV
 
-        # Create lib directory and copy PortAudio
-        mkdir -p lib
-        cp "$PORTAUDIO_PATH/lib/libportaudio.2.dylib" lib/
-        chmod +x lib/libportaudio.2.dylib
+        # Create Frameworks directory and copy PortAudio
+        mkdir -p Frameworks/libportaudio.2.dylib.framework/Versions/A
+        cp "$PORTAUDIO_PATH/lib/libportaudio.2.dylib" Frameworks/libportaudio.2.dylib.framework/Versions/A/
+        chmod +x Frameworks/libportaudio.2.dylib.framework/Versions/A/libportaudio.2.dylib
+
+        # Create framework symlinks
+        cd Frameworks/libportaudio.2.dylib.framework
+        ln -sf Versions/A/libportaudio.2.dylib libportaudio.2.dylib
+        cd Versions
+        ln -sf A Current
+        cd ../../..
 
         # Fix install name
-        install_name_tool -id "@executable_path/../Frameworks/libportaudio.2.dylib" lib/libportaudio.2.dylib
+        install_name_tool -id "@executable_path/../Frameworks/libportaudio.2.dylib.framework/Versions/A/libportaudio.2.dylib" \
+          Frameworks/libportaudio.2.dylib.framework/Versions/A/libportaudio.2.dylib
 
-        # Verify library
-        echo "Library location and dependencies:"
-        ls -l lib/
-        otool -L lib/libportaudio.2.dylib
+        # Verify framework structure
+        echo "Framework structure:"
+        ls -R Frameworks/
+        echo "Library dependencies:"
+        otool -L Frameworks/libportaudio.2.dylib.framework/Versions/A/libportaudio.2.dylib
 
     - name: Create App Assets
       run: |
@@ -72,8 +81,8 @@ jobs:
     - name: Build App
       run: |
         # Set environment variables
-        export DYLD_LIBRARY_PATH="$PWD/lib:$DYLD_LIBRARY_PATH"
-        export LIBRARY_PATH="$PWD/lib:$LIBRARY_PATH"
+        export DYLD_FRAMEWORK_PATH="$PWD/Frameworks:$DYLD_FRAMEWORK_PATH"
+        export DYLD_LIBRARY_PATH="$PWD/Frameworks:$DYLD_LIBRARY_PATH"
 
         # Clean previous builds
         rm -rf build dist
