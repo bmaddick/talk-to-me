@@ -1,7 +1,6 @@
 import sys
 import os
 import subprocess
-import shutil
 from setuptools import setup
 
 sys.setrecursionlimit(5000)
@@ -14,15 +13,10 @@ def get_portaudio_path():
         lib_path = os.path.join(prefix, 'lib', 'libportaudio.2.dylib')
         if not os.path.exists(lib_path):
             raise ValueError(f"PortAudio library not found at {lib_path}")
-
-        # Create lib directory and copy PortAudio
-        os.makedirs('lib', exist_ok=True)
-        local_lib = os.path.join('lib', 'libportaudio.2.dylib')
-        shutil.copy2(lib_path, local_lib)
-        print(f"Copied PortAudio to: {local_lib}")
-        return os.path.abspath(local_lib)
+        print(f"Found PortAudio at: {lib_path}")
+        return lib_path
     except Exception as e:
-        print(f"Error finding/copying PortAudio: {e}")
+        print(f"Error finding PortAudio: {e}")
         return None
 
 PORTAUDIO_LIB = get_portaudio_path()
@@ -32,7 +26,7 @@ if not PORTAUDIO_LIB:
 APP = ['src/main.py']
 DATA_FILES = [
     ('assets', ['src/assets/AppIcon.icns', 'src/assets/background.png']),
-    ('lib', [PORTAUDIO_LIB])
+    ('Frameworks', [PORTAUDIO_LIB])  # Bundle PortAudio in Frameworks directory
 ]
 
 OPTIONS = {
@@ -42,7 +36,6 @@ OPTIONS = {
     'includes': ['numpy', 'whisper', 'pyautogui'],
     'excludes': ['matplotlib', 'tkinter', 'PyQt5', 'wx', 'test'],
     'resources': ['src/assets'],
-    'dylibs': [PORTAUDIO_LIB],
     'strip': True,
     'plist': {
         'CFBundleName': 'TalkToMe',
