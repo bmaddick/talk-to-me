@@ -21,20 +21,14 @@ jobs:
     - name: Install PortAudio
       run: |
         brew install portaudio
-        mkdir -p lib
         # Debug output
         echo "PortAudio location: $(brew --prefix portaudio)"
         echo "Library files:"
         ls -la $(brew --prefix portaudio)/lib/
-        # Copy and fix library
-        cp $(brew --prefix portaudio)/lib/libportaudio.2.dylib lib/
-        # Fix library install name and verify
-        install_name_tool -id "@rpath/libportaudio.2.dylib" lib/libportaudio.2.dylib
-        # Add rpath to library
-        install_name_tool -add_rpath "@executable_path/." lib/libportaudio.2.dylib
-        otool -L lib/libportaudio.2.dylib
-        echo "Copied library location:"
-        ls -la lib/
+        # Set environment variables for PyInstaller to find libraries
+        echo "DYLD_LIBRARY_PATH=$(brew --prefix portaudio)/lib" >> $GITHUB_ENV
+        echo "LIBRARY_PATH=$(brew --prefix portaudio)/lib" >> $GITHUB_ENV
+        echo "CPATH=$(brew --prefix portaudio)/include" >> $GITHUB_ENV
 
     - name: Install Dependencies
       run: |
@@ -42,7 +36,7 @@ jobs:
         pip install pyinstaller pyaudio
         pip install -r requirements.txt
         # Debug PyAudio installation
-        python -c "import pyaudio; print('PyAudio version:', pyaudio.__version__); print('PyAudio _portaudio:', pyaudio._portaudio.__file__)"
+        python -c "import pyaudio; print('PyAudio version:', pyaudio.__version__)"
 
     - name: Build App
       run: |
@@ -51,8 +45,9 @@ jobs:
 
         # Debug environment
         echo "Current directory: $PWD"
-        echo "Library location:"
-        ls -la lib/
+        echo "Library paths:"
+        echo "DYLD_LIBRARY_PATH: $DYLD_LIBRARY_PATH"
+        echo "LIBRARY_PATH: $LIBRARY_PATH"
 
         # Create spec file
         cat > TalkToMe.spec << EOL
@@ -62,13 +57,14 @@ jobs:
 
         block_cipher = None
 
-        # Collect PortAudio library
-        portaudio_bins = [('lib/libportaudio.2.dylib', '.')]
+        # Get library paths from environment
+        lib_path = os.getenv('LIBRARY_PATH', '').split(':')[0]
+        portaudio_lib = os.path.join(lib_path, 'libportaudio.2.dylib')
 
         a = Analysis(
             ['src/main.py'],
-            pathex=[os.getcwd()],
-            binaries=portaudio_bins,
+            pathex=[os.getcwd(), lib_path],
+            binaries=[(portaudio_lib, '.')] if os.path.exists(portaudio_lib) else [],
             datas=[],
             hiddenimports=['pyaudio', 'numpy.core.multiarray', 'whisper'],
             hookspath=[],
