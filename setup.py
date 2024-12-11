@@ -5,26 +5,27 @@ from setuptools import setup
 
 sys.setrecursionlimit(5000)
 
-def get_portaudio_lib():
+def get_portaudio_path():
     try:
         result = subprocess.run(['brew', '--prefix', 'portaudio'],
                               capture_output=True, text=True, check=True)
-        lib_path = os.path.join(result.stdout.strip(), 'lib', 'libportaudio.2.dylib')
+        prefix = result.stdout.strip()
+        lib_path = os.path.join(prefix, 'lib', 'libportaudio.2.dylib')
         if not os.path.exists(lib_path):
             raise ValueError(f"PortAudio library not found at {lib_path}")
+        print(f"Found PortAudio at: {lib_path}")
         return lib_path
     except Exception as e:
         print(f"Error finding PortAudio: {e}")
         return None
 
-PORTAUDIO_LIB = get_portaudio_lib()
+PORTAUDIO_LIB = get_portaudio_path()
 if not PORTAUDIO_LIB:
     raise ValueError("PortAudio not found. Install with 'brew install portaudio'")
 
 APP = ['src/main.py']
 DATA_FILES = [
-    ('assets', ['src/assets/AppIcon.icns', 'src/assets/background.png']),
-    ('lib', [PORTAUDIO_LIB])  # Include PortAudio library directly
+    ('assets', ['src/assets/AppIcon.icns', 'src/assets/background.png'])
 ]
 
 OPTIONS = {
@@ -34,6 +35,7 @@ OPTIONS = {
     'includes': ['numpy', 'whisper', 'pyautogui'],
     'excludes': ['matplotlib', 'tkinter', 'PyQt5', 'wx', 'test'],
     'resources': ['src/assets'],
+    'frameworks': [PORTAUDIO_LIB],
     'strip': True,
     'plist': {
         'CFBundleName': 'TalkToMe',
@@ -58,6 +60,7 @@ OPTIONS = {
 
 setup(
     app=APP,
+    name='TalkToMe',
     data_files=DATA_FILES,
     options={'py2app': OPTIONS},
     setup_requires=['py2app'],
@@ -67,7 +70,6 @@ setup(
         'openai-whisper',
         'pyautogui',
     ],
-    name='TalkToMe',
     version='1.0.0',
     description='Voice to text for any application',
     author='Brandon Maddick',
