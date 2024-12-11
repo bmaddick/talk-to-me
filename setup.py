@@ -5,6 +5,20 @@ from setuptools import setup
 
 sys.setrecursionlimit(5000)
 
+# Get PortAudio path from environment or Homebrew
+def get_portaudio_path():
+    if 'PORTAUDIO_PATH' in os.environ:
+        return os.environ['PORTAUDIO_PATH']
+    try:
+        result = subprocess.run(['brew', '--prefix', 'portaudio'],
+                              capture_output=True, text=True, check=True)
+        return result.stdout.strip()
+    except:
+        return None
+
+portaudio_path = get_portaudio_path()
+portaudio_lib = os.path.join(portaudio_path, 'lib', 'libportaudio.2.dylib') if portaudio_path else None
+
 APP = ['src/main.py']
 DATA_FILES = [
     ('assets', ['src/assets/AppIcon.icns', 'src/assets/background.png'])
@@ -19,8 +33,8 @@ OPTIONS = {
     'resources': ['src/assets'],
     'strip': True,
     'site_packages': True,
-    'frameworks': ['$(brew --prefix portaudio)/lib/libportaudio.2.dylib'],
-    'dylib_excludes': ['libportaudio.2.dylib.framework'],
+    'frameworks': [portaudio_lib] if portaudio_lib else [],
+    'dylib_excludes': [],
     'plist': {
         'CFBundleName': 'TalkToMe',
         'CFBundleDisplayName': 'TalkToMe',
