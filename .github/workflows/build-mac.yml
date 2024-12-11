@@ -35,13 +35,13 @@ jobs:
         chmod 755 lib/libportaudio.2.dylib
 
         # Fix library install name and verify
-        install_name_tool -id "@executable_path/../lib/libportaudio.2.dylib" lib/libportaudio.2.dylib
+        install_name_tool -id "@rpath/libportaudio.2.dylib" lib/libportaudio.2.dylib
         otool -L lib/libportaudio.2.dylib
 
-        # Set environment variables
-        echo "PORTAUDIO_LIB=$PWD/lib/libportaudio.2.dylib" >> $GITHUB_ENV
+        # Set environment variables for build
         echo "DYLD_LIBRARY_PATH=$PWD/lib:$DYLD_LIBRARY_PATH" >> $GITHUB_ENV
         echo "DYLD_FALLBACK_LIBRARY_PATH=$PWD/lib:$DYLD_FALLBACK_LIBRARY_PATH" >> $GITHUB_ENV
+        echo "LIBRARY_PATH=$PWD/lib:$LIBRARY_PATH" >> $GITHUB_ENV
 
     - name: Install Dependencies
       run: |
@@ -69,18 +69,15 @@ jobs:
         echo $DYLD_LIBRARY_PATH
         echo $DYLD_FALLBACK_LIBRARY_PATH
 
-        # Show library info for debugging
-        otool -L lib/libportaudio.2.dylib || true
+        # Build with verbose output
+        python setup.py py2app -vv
 
-        # Build with verbose output and debug info
-        DYLD_PRINT_LIBRARIES=1 DYLD_PRINT_LIBRARIES_POST_LAUNCH=1 python setup.py py2app -vv
-
-        # Create lib directory in app bundle
-        mkdir -p dist/TalkToMe.app/Contents/lib
+        # Create frameworks directory in app bundle
+        mkdir -p dist/TalkToMe.app/Contents/Frameworks
 
         # Copy and configure PortAudio in app bundle
-        cp lib/libportaudio.2.dylib dist/TalkToMe.app/Contents/lib/
-        chmod 755 dist/TalkToMe.app/Contents/lib/libportaudio.2.dylib
+        cp lib/libportaudio.2.dylib dist/TalkToMe.app/Contents/Frameworks/
+        chmod 755 dist/TalkToMe.app/Contents/Frameworks/libportaudio.2.dylib
 
         # Fix library references in app bundle
         find dist/TalkToMe.app -name "*.so" -o -name "*.dylib" | while read lib; do
@@ -88,13 +85,13 @@ jobs:
           otool -L "$lib"
           chmod +w "$lib"
           install_name_tool -change "@rpath/libportaudio.2.dylib" \
-            "@executable_path/../lib/libportaudio.2.dylib" "$lib" || true
-          install_name_tool -add_rpath "@executable_path/../lib" "$lib" || true
+            "@executable_path/../Frameworks/libportaudio.2.dylib" "$lib" || true
+          install_name_tool -add_rpath "@executable_path/../Frameworks" "$lib" || true
         done
 
         # Verify final library setup
-        ls -lR dist/TalkToMe.app/Contents/lib/
-        otool -L dist/TalkToMe.app/Contents/lib/libportaudio.2.dylib
+        ls -lR dist/TalkToMe.app/Contents/Frameworks/
+        otool -L dist/TalkToMe.app/Contents/Frameworks/libportaudio.2.dylib
 
     - name: Create DMG
       run: |

@@ -67,8 +67,6 @@ OPTIONS = {
     'resources': ['src/assets'],
     'strip': True,
     'site_packages': True,
-    'frameworks': [],
-    'dylibs': ['lib/libportaudio.2.dylib'],
     'recipes': ['src/recipes'],
     'plist': {
         'CFBundleName': 'TalkToMe',
