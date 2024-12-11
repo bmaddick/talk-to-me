@@ -1,13 +1,26 @@
 import sys
 import os
+import subprocess
 from setuptools import setup
 
 sys.setrecursionlimit(5000)
+
+def get_portaudio_lib():
+    try:
+        result = subprocess.run(['brew', '--prefix', 'portaudio'],
+                              capture_output=True, text=True, check=True)
+        return os.path.join(result.stdout.strip(), 'lib', 'libportaudio.2.dylib')
+    except:
+        return None
 
 APP = ['src/main.py']
 DATA_FILES = [
     ('assets', ['src/assets/AppIcon.icns', 'src/assets/background.png'])
 ]
+
+portaudio_lib = get_portaudio_lib()
+if not portaudio_lib or not os.path.exists(portaudio_lib):
+    raise ValueError(f"PortAudio library not found at expected location: {portaudio_lib}")
 
 OPTIONS = {
     'argv_emulation': False,
@@ -17,7 +30,7 @@ OPTIONS = {
     'excludes': ['matplotlib', 'tkinter', 'PyQt5', 'wx', 'test'],
     'resources': ['src/assets'],
     'strip': True,
-    'site_packages': True,
+    'frameworks': [portaudio_lib],
     'plist': {
         'CFBundleName': 'TalkToMe',
         'CFBundleDisplayName': 'TalkToMe',

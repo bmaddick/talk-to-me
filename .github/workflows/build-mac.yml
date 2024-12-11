@@ -22,10 +22,20 @@ jobs:
       run: |
         brew install portaudio
         PORTAUDIO_PREFIX=$(brew --prefix portaudio)
+        PORTAUDIO_LIB="$PORTAUDIO_PREFIX/lib/libportaudio.2.dylib"
+
+        # Verify PortAudio installation
+        if [ ! -f "$PORTAUDIO_LIB" ]; then
+          echo "Error: PortAudio library not found at $PORTAUDIO_LIB"
+          exit 1
+        fi
+
         echo "PORTAUDIO_PATH=$PORTAUDIO_PREFIX" >> $GITHUB_ENV
-        echo "CFLAGS=-I$PORTAUDIO_PREFIX/include" >> $GITHUB_ENV
-        echo "LDFLAGS=-L$PORTAUDIO_PREFIX/lib" >> $GITHUB_ENV
-        echo "PKG_CONFIG_PATH=$PORTAUDIO_PREFIX/lib/pkgconfig" >> $GITHUB_ENV
+        echo "PORTAUDIO_LIB=$PORTAUDIO_LIB" >> $GITHUB_ENV
+        echo "DYLD_LIBRARY_PATH=$PORTAUDIO_PREFIX/lib:$DYLD_LIBRARY_PATH" >> $GITHUB_ENV
+
+        # Show library info
+        otool -L "$PORTAUDIO_LIB"
 
     - name: Install Dependencies
       run: |
@@ -37,18 +47,24 @@ jobs:
     - name: Build App
       run: |
         rm -rf dist build
-        # Build the app without framework detection
+
+        # Verify PortAudio library before build
+        if [ ! -f "$PORTAUDIO_LIB" ]; then
+          echo "Error: PortAudio library not found before build"
+          exit 1
+        fi
+
         python setup.py py2app -vv
 
         # Create Frameworks directory and copy PortAudio
         mkdir -p dist/TalkToMe.app/Contents/Frameworks
-        cp $(brew --prefix portaudio)/lib/libportaudio.2.dylib dist/TalkToMe.app/Contents/Frameworks/
+        cp "$PORTAUDIO_LIB" dist/TalkToMe.app/Contents/Frameworks/
 
         # Fix library references
         PYAUDIO_SO=$(find dist/TalkToMe.app -name "_portaudio.so")
         if [ -n "$PYAUDIO_SO" ]; then
           chmod +w "$PYAUDIO_SO"
-          install_name_tool -change "@loader_path/libportaudio.2.dylib" \
+          install_name_tool -change "$PORTAUDIO_LIB" \
             "@rpath/libportaudio.2.dylib" "$PYAUDIO_SO"
           install_name_tool -id "@rpath/libportaudio.2.dylib" \
             dist/TalkToMe.app/Contents/Frameworks/libportaudio.2.dylib
