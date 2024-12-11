@@ -32,8 +32,8 @@ OPTIONS = {
         'CFBundleDisplayName': 'TalkToMe',
         'CFBundleGetInfoString': "Voice to text for any application",
         'CFBundleIdentifier': "com.bmaddick.talktome",
-        'CFBundleVersion': "0.1.9",
-        'CFBundleShortVersionString': "0.1.9",
+        'CFBundleVersion': "1.0.0",
+        'CFBundleShortVersionString': "1.0.0",
         'LSMinimumSystemVersion': '10.13.0',  # Minimum macOS version
         'NSMicrophoneUsageDescription': 'TalkToMe needs microphone access to convert your speech to text.',
         'NSAppleEventsUsageDescription': 'TalkToMe needs accessibility access to type text in any application.',
