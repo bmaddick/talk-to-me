@@ -25,13 +25,17 @@ jobs:
         PORTAUDIO_PATH=$(brew --prefix portaudio)
         echo "PORTAUDIO_PATH=$PORTAUDIO_PATH" >> $GITHUB_ENV
 
-        # Copy PortAudio library to app directory
+        # Create lib directory and copy PortAudio
         mkdir -p lib
         cp "$PORTAUDIO_PATH/lib/libportaudio.2.dylib" lib/
         chmod +x lib/libportaudio.2.dylib
 
+        # Fix library install name
+        install_name_tool -id "@rpath/libportaudio.2.dylib" lib/libportaudio.2.dylib
+
         # Verify library setup
         otool -L lib/libportaudio.2.dylib
+        ls -l lib/
 
     - name: Create App Assets
       run: |
@@ -58,23 +62,23 @@ jobs:
         python -m pip install --use-pep517 py2app
 
         # Verify PyAudio installation
-        python -c "import pyaudio; print('PyAudio location:', pyaudio.__file__)"
+        python -c "
+        import pyaudio, os
+        print('PyAudio:', pyaudio.__file__)
+        print('PortAudio lib exists:', os.path.exists('lib/libportaudio.2.dylib'))
+        "
 
     - name: Build App
       run: |
         # Set environment variables
         export DYLD_LIBRARY_PATH="$PWD/lib:$DYLD_LIBRARY_PATH"
-        export LIBRARY_PATH="$PWD/lib:$LIBRARY_PATH"
+        export DYLD_FALLBACK_LIBRARY_PATH="$PWD/lib:$DYLD_FALLBACK_LIBRARY_PATH"
 
         # Clean previous builds
         rm -rf dist build
 
         # Build with verbose output
-        python setup.py py2app -vv
-
-        # Copy PortAudio to app bundle
-        mkdir -p dist/TalkToMe.app/Contents/Frameworks
-        cp lib/libportaudio.2.dylib dist/TalkToMe.app/Contents/Frameworks/
+        PYTHONPATH="$PWD" python setup.py py2app -vv
 
         # Verify app bundle
         echo "App bundle contents:"

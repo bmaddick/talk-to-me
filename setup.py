@@ -36,9 +36,8 @@ OPTIONS = {
     'packages': ['numpy', 'whisper', 'pyaudio', 'tiktoken', 'torch'],
     'includes': ['numpy', 'whisper', 'pyaudio._portaudio', 'pyautogui'],
     'excludes': ['matplotlib', 'tkinter', 'PyQt5', 'wx', 'test'],
-    'binary_includes': [PORTAUDIO_LIB],  # Directly include the PortAudio library
+    'dylibs': [PORTAUDIO_LIB],  # Use dylibs option for dynamic libraries
     'resources': ['src/assets'],
-    'dylib_excludes': ['libgfortran.3.dylib', 'libquadmath.0.dylib', 'libgcc_s.1.dylib'],
     'strip': True,
     'plist': {
         'CFBundleName': 'TalkToMe',
