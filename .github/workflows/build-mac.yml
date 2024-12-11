@@ -51,17 +51,16 @@ jobs:
     - name: Create App Icon and Background
       run: |
         # Clean up any existing directories
-        rm -rf src/assets
-        mkdir -p src/assets
+        rm -rf src/assets AppIcon.iconset
+        mkdir -p src/assets AppIcon.iconset
 
-        # Create a simple white background using native tools
-        mkdir -p src/assets
+        # Create a simple white background
         touch src/assets/background.png
         sips -s format png src/assets/background.png
         sips -z 400 800 src/assets/background.png
         sips -s format png -s formatOptions 100 src/assets/background.png
 
-        # Use system app icon as base
+        # Create app icon using system resources
         cp /System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/GenericApplicationIcon.icns src/assets/AppIcon.icns
 
     - name: Build App
