@@ -6,3 +6,6 @@ pyobjc>=10.0; platform_system=="Darwin"
 rubicon-objc>=0.4.7; platform_system=="Darwin"
 pyinstaller>=6.3.0; platform_system=="Darwin"
 setuptools>=65.5.1
+rumps>=0.4.0; platform_system=="Darwin"
+pynput>=1.7.6
+Pillow>=10.1.0  # Required for PIL modules
