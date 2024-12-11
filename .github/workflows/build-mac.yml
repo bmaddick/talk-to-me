@@ -65,21 +65,26 @@ jobs:
         # Create frameworks directory in app bundle
         mkdir -p dist/TalkToMe.app/Contents/Frameworks
 
-        # Copy PortAudio library
-        cp lib/libportaudio.2.dylib dist/TalkToMe.app/Contents/Frameworks/
+        # Copy PortAudio library with debug output
+        echo "Copying PortAudio library..."
+        cp -v lib/libportaudio.2.dylib dist/TalkToMe.app/Contents/Frameworks/
         chmod 755 dist/TalkToMe.app/Contents/Frameworks/libportaudio.2.dylib
 
-        # Fix library references in app bundle
+        # Fix library references in app bundle with verbose output
+        echo "Fixing library references..."
         find dist/TalkToMe.app -name "*.so" -o -name "*.dylib" | while read lib; do
-          echo "Checking $lib"
+          echo "Processing $lib"
           otool -L "$lib"
           chmod +w "$lib"
-          install_name_tool -change "@rpath/libportaudio.2.dylib" \
+          install_name_tool -change "/usr/local/opt/portaudio/lib/libportaudio.2.dylib" \
             "@executable_path/../Frameworks/libportaudio.2.dylib" "$lib" || true
-          install_name_tool -add_rpath "@executable_path/../Frameworks" "$lib" || true
+          install_name_tool -change "lib/libportaudio.2.dylib" \
+            "@executable_path/../Frameworks/libportaudio.2.dylib" "$lib" || true
+          echo "Finished processing $lib"
         done
 
         # Verify final library setup
+        echo "Final library verification:"
         ls -lR dist/TalkToMe.app/Contents/Frameworks/
         otool -L dist/TalkToMe.app/Contents/Frameworks/libportaudio.2.dylib
 
