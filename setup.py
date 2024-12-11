@@ -5,13 +5,12 @@ import os
 import sys
 from setuptools import setup
 
-def get_library_path():
-    """Get the absolute path to the PortAudio library."""
-    lib_path = os.path.abspath(os.path.join('lib', 'libportaudio.2.dylib'))
-    if os.path.exists(lib_path):
-        print(f"Found PortAudio at: {lib_path}")
-        return lib_path
-    raise ValueError("PortAudio library not found")
+def get_dylib_path():
+    """Get the path to the PortAudio dylib."""
+    lib_path = os.path.abspath('lib/libportaudio.2.dylib')
+    if not os.path.exists(lib_path):
+        raise ValueError(f"PortAudio library not found at {lib_path}")
+    return lib_path
 
 APP = ['src/main.py']
 DATA_FILES = [
@@ -24,10 +23,9 @@ OPTIONS = {
     'packages': ['pyaudio'],
     'includes': ['numpy', 'torch', 'whisper', 'rubicon.objc'],
     'excludes': ['matplotlib', 'tkinter', 'PyQt5', 'wx', 'test'],
-    'resources': ['src/assets'],
+    'frameworks': [get_dylib_path()],
     'strip': True,
     'optimize': 2,
-    'site_packages': True,
     'plist': {
         'CFBundleName': 'TalkToMe',
         'CFBundleDisplayName': 'TalkToMe',
@@ -41,10 +39,6 @@ OPTIONS = {
         'LSUIElement': True,
     }
 }
-
-# Add library to be copied
-library_path = get_library_path()
-OPTIONS['resources'].append(('lib', [library_path]))
 
 setup(
     name='TalkToMe',
