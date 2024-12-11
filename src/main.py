@@ -10,18 +10,49 @@ from input_simulation.text_input import TextInputSimulator
 import subprocess
 import platform
 
-# Configure logging
-logging.basicConfig(level=logging.INFO)
+# Configure logging with file output
+log_file = os.path.expanduser('~/Library/Logs/TalkToMe/app.log')
+os.makedirs(os.path.dirname(log_file), exist_ok=True)
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler(log_file),
+        logging.StreamHandler()
+    ]
+)
 logger = logging.getLogger(__name__)
 
 class TalkToMeApp(rumps.App):
     def __init__(self):
-        super().__init__("TalkToMe", icon='assets/AppIcon.png')
+        # Ensure icon path is absolute
+        icon_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'assets', 'AppIcon.png')
+        logger.debug(f"Using icon path: {icon_path}")
+
+        super().__init__("TalkToMe", icon=icon_path, quit_button=None)
         self.recording = False
         self.recorder = None
         self.transcriber = None
         self.input_simulator = None
-        self.menu = ["Start Recording", "Stop Recording", "Check Permissions"]
+        self.menu = ["Start Recording", "Stop Recording", "Check Permissions", None, "Quit"]
+
+        # Verify app visibility on startup
+        self.verify_visibility()
+
+    def verify_visibility(self):
+        """Verify the app is visible in the menu bar."""
+        logger.debug("Verifying menu bar visibility...")
+        try:
+            result = subprocess.run(
+                ['osascript', '-e', 'tell application "System Events" to get every process whose name contains "TalkToMe"'],
+                capture_output=True,
+                text=True
+            )
+            if "TalkToMe" not in result.stdout:
+                logger.warning("App not visible in menu bar, attempting to refresh...")
+                self.menu.update()
+        except Exception as e:
+            logger.error(f"Error verifying visibility: {e}")
 
     @rumps.clicked("Start Recording")
     def start_recording(self, _):
@@ -76,37 +107,57 @@ class TalkToMeApp(rumps.App):
             # Check microphone permission
             mic_check = subprocess.run(
                 ['osascript', '-e', 'tell application "System Events" to get microphone access of current application'],
-                capture_output=True
+                capture_output=True,
+                text=True
             )
             if mic_check.returncode != 0:
                 logger.info("Requesting microphone permission...")
-                subprocess.run(['tccutil', 'reset', 'Microphone'])
+                subprocess.run(['tccutil', 'reset', 'Microphone'], check=True)
                 subprocess.run([
                     'osascript', '-e',
-                    'tell application "System Events" to display dialog "TalkToMe needs microphone access. Please click OK, then allow access in the next prompt."'
-                ])
+                    'tell application "System Events" to display dialog "TalkToMe needs microphone access. Please click OK, then allow access in System Settings." buttons {"Open Settings", "Cancel"} default button "Open Settings"'
+                ], check=True)
+                subprocess.run(['open', 'x-apple.systempreferences:com.apple.preference.security?Privacy_Microphone'])
 
             # Check accessibility permission
             acc_check = subprocess.run(
                 ['osascript', '-e', 'tell application "System Events" to get UI elements enabled'],
-                capture_output=True
+                capture_output=True,
+                text=True
             )
             if acc_check.returncode != 0:
                 logger.info("Requesting accessibility permission...")
                 subprocess.run([
                     'osascript', '-e',
-                    'tell application "System Events" to display dialog "TalkToMe needs accessibility access. Please click OK, then allow access in System Settings."'
-                ])
+                    'tell application "System Events" to display dialog "TalkToMe needs accessibility access. Please click OK, then allow access in System Settings." buttons {"Open Settings", "Cancel"} default button "Open Settings"'
+                ], check=True)
                 subprocess.run(['open', 'x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility'])
 
-            rumps.notification("TalkToMe", "Permissions Check", "Please grant any requested permissions")
+            # Verify visibility after permission changes
+            self.verify_visibility()
+            rumps.notification("TalkToMe", "Permissions Check", "Please grant any requested permissions and restart the app if needed")
         except Exception as e:
             logger.error(f"Error checking permissions: {e}")
             rumps.notification("TalkToMe Error", "Permission Check Failed", str(e))
 
+    @rumps.clicked("Quit")
+    def quit_app(self, _):
+        """Properly clean up and quit the app."""
+        logger.info("Quitting application...")
+        if self.recording:
+            self.stop_recording(None)
+        rumps.quit_application()
+
 def main():
     logger.info("Starting TalkToMe menu bar app...")
-    TalkToMeApp().run()
+    try:
+        app = TalkToMeApp()
+        # Initial permission check
+        app.check_permissions(None)
+        app.run()
+    except Exception as e:
+        logger.error(f"Failed to start app: {e}")
+        sys.exit(1)
 
 if __name__ == "__main__":
     main()
