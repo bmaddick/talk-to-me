@@ -2,9 +2,9 @@ name: Build Mac App
 
 on:
   push:
-    tags:
-      - 'v*'
-  workflow_dispatch:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
 
 jobs:
   build:
@@ -18,103 +18,99 @@ jobs:
       with:
         python-version: '3.11'
 
-    - name: Install System Dependencies
+    - name: Install and Configure PortAudio
       run: |
-        brew install create-dmg
         brew install portaudio
-
-        # Set up and verify PortAudio paths
         PORTAUDIO_PREFIX=$(brew --prefix portaudio)
-        echo "PORTAUDIO_PATH=$PORTAUDIO_PREFIX" >> $GITHUB_ENV
-        echo "DYLD_LIBRARY_PATH=$PORTAUDIO_PREFIX/lib:$DYLD_LIBRARY_PATH" >> $GITHUB_ENV
-        echo "LIBRARY_PATH=$PORTAUDIO_PREFIX/lib:$LIBRARY_PATH" >> $GITHUB_ENV
-        echo "PKG_CONFIG_PATH=$PORTAUDIO_PREFIX/lib/pkgconfig:$PKG_CONFIG_PATH" >> $GITHUB_ENV
+        PORTAUDIO_LIB="$PORTAUDIO_PREFIX/lib/libportaudio.2.dylib"
 
-        # Verify installation
-        ls -la $PORTAUDIO_PREFIX/lib/
-        pkg-config --libs --cflags portaudio-2.0
+        # Create lib directory and copy PortAudio
+        mkdir -p lib
+        cp "$PORTAUDIO_LIB" lib/
+        chmod 755 lib/libportaudio.2.dylib
 
-    - name: Install Python Dependencies
+        # Create framework structure
+        mkdir -p lib/libportaudio.2.dylib.framework/Versions/A
+        mv lib/libportaudio.2.dylib lib/libportaudio.2.dylib.framework/Versions/A/
+        ln -s A lib/libportaudio.2.dylib.framework/Versions/Current
+        ln -s Versions/Current/libportaudio.2.dylib lib/libportaudio.2.dylib.framework/libportaudio.2.dylib
+
+        # Fix library install names
+        install_name_tool -id "@rpath/libportaudio.2.dylib.framework/Versions/A/libportaudio.2.dylib" \
+          lib/libportaudio.2.dylib.framework/Versions/A/libportaudio.2.dylib
+
+        # Set environment variables for build
+        echo "DYLD_LIBRARY_PATH=$PWD/lib:$DYLD_LIBRARY_PATH" >> $GITHUB_ENV
+        echo "DYLD_FRAMEWORK_PATH=$PWD/lib:$DYLD_FRAMEWORK_PATH" >> $GITHUB_ENV
+        echo "LIBRARY_PATH=$PWD/lib:$LIBRARY_PATH" >> $GITHUB_ENV
+
+    - name: Install Dependencies
       run: |
         python -m pip install --upgrade pip setuptools wheel
-        python -m pip install --use-pep517 -r requirements.txt
-        python -m pip install --use-pep517 py2app
+        pip install --use-pep517 rubicon-objc
+        pip install --use-pep517 py2app
 
-    - name: Create App Icon
+        # Install PyAudio with PortAudio framework path
+        export LDFLAGS="-L$PWD/lib/libportaudio.2.dylib.framework/Versions/A"
+        export CFLAGS="-I$(brew --prefix portaudio)/include"
+        DYLD_FRAMEWORK_PATH=$PWD/lib pip install --use-pep517 pyaudio
+
+        # Install remaining dependencies
+        pip install -r requirements.txt
+
+    - name: Build App
       run: |
-        # Clean up any existing directories
-        rm -rf src/assets AppIcon.iconset
-        mkdir -p src/assets
-        # Create a simple blue circle icon
-        convert -size 1024x1024 xc:none \
-          -fill '#0066cc' \
-          -draw 'circle 512,512 512,100' \
-          src/assets/AppIcon.png
+        rm -rf dist build
 
-        # Create iconset directory
-        mkdir AppIcon.iconset
-        # Generate icon files using sips (native macOS tool)
-        for size in 16 32 128 256 512; do
-          sips -z $size $size src/assets/AppIcon.png --out AppIcon.iconset/icon_${size}x${size}.png
-          if [ $size -lt 512 ]; then
-            sips -z $((size*2)) $((size*2)) src/assets/AppIcon.png --out AppIcon.iconset/icon_${size}x${size}@2x.png
-          fi
+        # Debug environment
+        echo "Current directory: $PWD"
+        echo "PortAudio lib location:"
+        ls -l lib/
+        echo "Library path environment:"
+        echo $DYLD_LIBRARY_PATH
+        echo $DYLD_FALLBACK_LIBRARY_PATH
+
+        # Build with verbose output
+        python setup.py py2app -vv
+
+        # Create frameworks directory in app bundle
+        mkdir -p dist/TalkToMe.app/Contents/Frameworks
+
+        # Copy framework structure
+        cp -R lib/libportaudio.2.dylib.framework dist/TalkToMe.app/Contents/Frameworks/
+        chmod -R 755 dist/TalkToMe.app/Contents/Frameworks/libportaudio.2.dylib.framework
+
+        # Fix library references in app bundle
+        find dist/TalkToMe.app -name "*.so" -o -name "*.dylib" | while read lib; do
+          echo "Checking $lib"
+          otool -L "$lib"
+          chmod +w "$lib"
+          install_name_tool -change "@rpath/libportaudio.2.dylib.framework/Versions/A/libportaudio.2.dylib" \
+            "@executable_path/../Frameworks/libportaudio.2.dylib.framework/Versions/A/libportaudio.2.dylib" "$lib" || true
+          install_name_tool -add_rpath "@executable_path/../Frameworks" "$lib" || true
         done
-        # Create icns file
-        iconutil -c icns AppIcon.iconset
-        mv AppIcon.icns src/assets/
 
-    - name: Create DMG Background
+        # Verify final framework setup
+        ls -lR dist/TalkToMe.app/Contents/Frameworks/
+        otool -L dist/TalkToMe.app/Contents/Frameworks/libportaudio.2.dylib.framework/Versions/A/libportaudio.2.dylib
+
+    - name: Create DMG
       run: |
-        mkdir -p src/assets
-        # Create simple background with arrow and text
-        convert -size 800x400 xc:white \
-          -fill black \
-          -gravity center \
-          -pointsize 24 \
-          -draw "text 0,-100 'Install TalkToMe'" \
-          -pointsize 14 \
-          -draw "text 0,100 '→ Drag to Applications'" \
-          src/assets/background.png
+        brew install create-dmg
+        create-dmg \
+          --volname "TalkToMe" \
+          --volicon "src/assets/AppIcon.icns" \
+          --window-pos 200 120 \
+          --window-size 800 400 \
+          --icon-size 100 \
+          --icon "TalkToMe.app" 200 190 \
+          --hide-extension "TalkToMe.app" \
+          --app-drop-link 600 185 \
+          "TalkToMe.dmg" \
+          "dist/TalkToMe.app"
 
-    - name: Build App and Create DMG
-      run: |
-        chmod +x build_mac_app.sh create_dmg.sh copy_frameworks.sh
-        ./copy_frameworks.sh
-        ./build_mac_app.sh
-        ./create_dmg.sh
-
-    - name: Upload DMG Artifact
-      uses: actions/upload-artifact@v4
+    - name: Upload Artifacts
+      uses: actions/upload-artifact@v3
       with:
-        name: TalkToMe-Installer
-        path: dist/TalkToMe.dmg
-
-    - name: Create Release
-      if: startsWith(github.ref, 'refs/tags/')
-      uses: softprops/action-gh-release@v1
-      with:
-        files: dist/TalkToMe.dmg
-        name: "TalkToMe v${{ github.ref_name }}"
-        prerelease: false
-        draft: false
-        fail_on_unmatched_files: true
-        generate_release_notes: false
-        body: |
-          # TalkToMe Voice-to-Text Application
-
-          ## Installation
-          1. Download `TalkToMe.dmg` by clicking the file below
-          2. Double-click the downloaded DMG file to open it
-          3. When the installer window appears, drag the TalkToMe icon to the Applications folder
-          4. Close the installer window
-          5. Open TalkToMe from your Applications folder
-
-          The application will automatically request necessary permissions when launched:
-          - Microphone access (for voice recognition)
-          - Accessibility access (for typing in any application)
-
-          ## System Requirements
-          - macOS 10.13 or later
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        name: TalkToMe
+        path: TalkToMe.dmg

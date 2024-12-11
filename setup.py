@@ -1,67 +1,53 @@
-import sys
-sys.setrecursionlimit(5000)  # Increase recursion limit for py2app
-
+"""
+Setup script for building the TalkToMe application.
+"""
+import os
 from setuptools import setup
 
+def find_portaudio():
+    """Find the PortAudio library."""
+    portaudio_path = os.path.join('lib', 'libportaudio.2.dylib')
+    if os.path.exists(portaudio_path):
+        print(f"Found PortAudio at: {portaudio_path}")
+        return portaudio_path
+    raise ValueError("PortAudio library not found")
+
+PORTAUDIO_LIB = find_portaudio()
+
 APP = ['src/main.py']
-DATA_FILES = [('assets', ['src/assets/AppIcon.icns', 'src/assets/background.png'])]
+DATA_FILES = [
+    ('assets', ['src/assets/AppIcon.icns']),
+    ('lib', [PORTAUDIO_LIB]),
+]
+
 OPTIONS = {
-    'argv_emulation': False,  # Disable argv emulation for better Mac integration
+    'argv_emulation': False,
     'iconfile': 'src/assets/AppIcon.icns',
-    'packages': [
-        'numpy', 'whisper', 'pyaudio', 'openai_whisper', 'tiktoken', 'torch',
-        'regex', 'tqdm', 'more_itertools', 'requests', 'typing_extensions'
-    ],
-    'includes': [
-        'numpy', 'whisper', 'pyaudio', 'pyautogui', 'openai_whisper',
-        'tiktoken', 'torch', 'regex', 'tqdm'
-    ],
-    'excludes': ['matplotlib', 'tkinter', 'PyQt5', 'wx', 'test', 'sphinx', 'sqlalchemy', 'pandas', 'pygame'],
-    'frameworks': [
-        'build/frameworks/libportaudio.2.dylib',  # Use our bundled copy
-        '/System/Library/Frameworks/CoreAudio.framework',
-        '/System/Library/Frameworks/AudioToolbox.framework',
-        '/System/Library/Frameworks/AVFoundation.framework',
-        '/System/Library/Frameworks/ApplicationServices.framework'
-    ],
+    'packages': ['pyaudio'],
+    'includes': ['numpy', 'torch', 'whisper', 'rubicon.objc'],
+    'excludes': ['matplotlib', 'tkinter', 'PyQt5', 'wx', 'test'],
     'resources': ['src/assets'],
-    'dylib_excludes': ['libgfortran.3.dylib', 'libquadmath.0.dylib', 'libgcc_s.1.dylib'],
-    'strip': True,  # Strip debug symbols to reduce size
+    'strip': True,
+    'optimize': 2,
+    'dylib_excludes': ['libportaudio.2.dylib'],
     'plist': {
         'CFBundleName': 'TalkToMe',
         'CFBundleDisplayName': 'TalkToMe',
-        'CFBundleGetInfoString': "Voice to text for any application",
-        'CFBundleIdentifier': "com.bmaddick.talktome",
-        'CFBundleVersion': "0.1.9",
-        'CFBundleShortVersionString': "0.1.9",
-        'LSMinimumSystemVersion': '10.13.0',  # Minimum macOS version
-        'NSMicrophoneUsageDescription': 'TalkToMe needs microphone access to convert your speech to text.',
-        'NSAppleEventsUsageDescription': 'TalkToMe needs accessibility access to type text in any application.',
-        'LSUIElement': True,  # Makes it a background application
-        'LSBackgroundOnly': False,
-        'NSHighResolutionCapable': True,
-        'CFBundleIconFile': 'AppIcon',
-        'CFBundleDocumentTypes': [],  # Ensures proper app bundle handling
-        'CFBundlePackageType': 'APPL',  # Explicitly mark as application
-        'NSRequiresAquaSystemAppearance': True,  # Ensure proper Mac app appearance
-        'LSApplicationCategoryType': 'public.app-category.productivity',  # Set app category
+        'CFBundleIdentifier': 'com.bmaddick.talktome',
+        'CFBundleVersion': '1.0.0',
+        'CFBundleShortVersionString': '1.0.0',
+        'LSMinimumSystemVersion': '10.10.0',
+        'NSMicrophoneUsageDescription': 'TalkToMe needs access to your microphone for voice input.',
+        'NSAppleEventsUsageDescription': 'TalkToMe needs to control other applications to input text.',
+        'LSApplicationCategoryType': 'public.app-category.productivity',
+        'LSUIElement': True,
     }
 }
 
 setup(
+    name='TalkToMe',
     app=APP,
     data_files=DATA_FILES,
     options={'py2app': OPTIONS},
     setup_requires=['py2app'],
-    install_requires=[
-        'pyaudio',
-        'numpy',
-        'openai-whisper',
-        'pyautogui',
-    ],
-    name='TalkToMe',
-    version='1.0.0',
-    description='Voice to text for any application',
-    author='Brandon Maddick',
-    author_email='',
 )
