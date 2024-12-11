@@ -1,9 +1,9 @@
 import sys
 import os
 import shutil
-sys.setrecursionlimit(5000)
-
 from setuptools import setup
+
+sys.setrecursionlimit(5000)
 
 APP = ['src/main.py']
 DATA_FILES = [
@@ -15,7 +15,19 @@ PORTAUDIO_PATH = os.getenv('PORTAUDIO_PATH', '/opt/homebrew/opt/portaudio')
 PORTAUDIO_LIB = os.path.join(PORTAUDIO_PATH, 'lib', 'libportaudio.2.dylib')
 
 if not os.path.exists(PORTAUDIO_LIB):
-    raise ValueError(f"PortAudio library not found at {PORTAUDIO_LIB}")
+    print(f"Warning: PortAudio library not found at {PORTAUDIO_LIB}")
+    print("Searching in common locations...")
+    common_paths = [
+        '/usr/local/lib/libportaudio.2.dylib',
+        '/opt/local/lib/libportaudio.2.dylib',
+        '/usr/lib/libportaudio.2.dylib'
+    ]
+    for path in common_paths:
+        if os.path.exists(path):
+            PORTAUDIO_LIB = path
+            break
+    else:
+        raise ValueError("Could not find PortAudio library in any common location")
 
 print(f"Using PortAudio library at: {PORTAUDIO_LIB}")
 
@@ -31,7 +43,7 @@ OPTIONS = {
         'tiktoken', 'torch', 'regex', 'tqdm'
     ],
     'excludes': ['matplotlib', 'tkinter', 'PyQt5', 'wx', 'test', 'sphinx', 'sqlalchemy', 'pandas', 'pygame'],
-    'frameworks': [PORTAUDIO_LIB],  # Use the full path to the dylib
+    'dylibs': [PORTAUDIO_LIB],  # Use dylibs instead of frameworks
     'resources': ['src/assets'],
     'dylib_excludes': ['libgfortran.3.dylib', 'libquadmath.0.dylib', 'libgcc_s.1.dylib'],
     'strip': True,

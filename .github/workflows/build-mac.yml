@@ -25,28 +25,18 @@ jobs:
         PORTAUDIO_PATH=$(brew --prefix portaudio)
         echo "PORTAUDIO_PATH=$PORTAUDIO_PATH" >> $GITHUB_ENV
 
-        # Create framework structure
-        FRAMEWORK_DIR="libportaudio.2.dylib.framework"
-        mkdir -p "$FRAMEWORK_DIR/Versions/A"
-        cp "$PORTAUDIO_PATH/lib/libportaudio.2.dylib" "$FRAMEWORK_DIR/Versions/A/"
-        chmod +x "$FRAMEWORK_DIR/Versions/A/libportaudio.2.dylib"
-
-        # Create framework symlinks
-        cd "$FRAMEWORK_DIR"
-        ln -sf "Versions/A/libportaudio.2.dylib" "libportaudio.2.dylib"
-        cd Versions
-        ln -sf "A" "Current"
-        cd ../..
+        # Create lib directory and copy PortAudio
+        mkdir -p lib
+        cp "$PORTAUDIO_PATH/lib/libportaudio.2.dylib" lib/
+        chmod +x lib/libportaudio.2.dylib
 
         # Fix install name
-        install_name_tool -id "@executable_path/../Frameworks/$FRAMEWORK_DIR/Versions/A/libportaudio.2.dylib" \
-          "$FRAMEWORK_DIR/Versions/A/libportaudio.2.dylib"
+        install_name_tool -id "@executable_path/../Frameworks/libportaudio.2.dylib" lib/libportaudio.2.dylib
 
-        # Verify framework
-        echo "Framework structure:"
-        ls -R "$FRAMEWORK_DIR"
-        echo "Library dependencies:"
-        otool -L "$FRAMEWORK_DIR/Versions/A/libportaudio.2.dylib"
+        # Verify library
+        echo "Library location and dependencies:"
+        ls -l lib/
+        otool -L lib/libportaudio.2.dylib
 
     - name: Create App Assets
       run: |
@@ -82,8 +72,8 @@ jobs:
     - name: Build App
       run: |
         # Set environment variables
-        export DYLD_FRAMEWORK_PATH="$PWD:$DYLD_FRAMEWORK_PATH"
-        export LIBRARY_PATH="$PWD:$LIBRARY_PATH"
+        export DYLD_LIBRARY_PATH="$PWD/lib:$DYLD_LIBRARY_PATH"
+        export LIBRARY_PATH="$PWD/lib:$LIBRARY_PATH"
 
         # Clean previous builds
         rm -rf build dist
