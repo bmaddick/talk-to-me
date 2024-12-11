@@ -1,7 +1,5 @@
 import sys
 import os
-import site
-import subprocess
 from setuptools import setup
 
 sys.setrecursionlimit(5000)
@@ -11,30 +9,13 @@ DATA_FILES = [
     ('assets', ['src/assets/AppIcon.icns', 'src/assets/background.png'])
 ]
 
-# Get PortAudio path from environment or find it
-def find_portaudio():
-    # First check environment variable
-    portaudio_path = os.getenv('PORTAUDIO_PATH')
-    if portaudio_path:
-        lib_path = os.path.join(portaudio_path, 'lib', 'libportaudio.2.dylib')
-        if os.path.exists(lib_path):
-            return lib_path
+# Get PortAudio path from environment or use default Homebrew location
+PORTAUDIO_PATH = os.getenv('PORTAUDIO_PATH', '/opt/homebrew/opt/portaudio')
+PORTAUDIO_LIB = os.path.join(PORTAUDIO_PATH, 'lib', 'libportaudio.2.dylib')
 
-    # Check if we have a local copy in lib/
-    local_lib = os.path.join('lib', 'libportaudio.2.dylib')
-    if os.path.exists(local_lib):
-        return os.path.abspath(local_lib)
-
-    # Try to find it using system paths
-    try:
-        brew_prefix = subprocess.check_output(['brew', '--prefix', 'portaudio']).decode().strip()
-        lib_path = os.path.join(brew_prefix, 'lib', 'libportaudio.2.dylib')
-        if os.path.exists(lib_path):
-            return lib_path
-    except:
-        pass
-
-    # Check common locations
+if not os.path.exists(PORTAUDIO_LIB):
+    print(f"Warning: PortAudio library not found at {PORTAUDIO_LIB}")
+    print("Searching in common locations...")
     common_paths = [
         '/usr/local/lib/libportaudio.2.dylib',
         '/opt/local/lib/libportaudio.2.dylib',
@@ -42,11 +23,11 @@ def find_portaudio():
     ]
     for path in common_paths:
         if os.path.exists(path):
-            return path
+            PORTAUDIO_LIB = path
+            break
+    else:
+        raise ValueError("Could not find PortAudio library in any common location")
 
-    raise ValueError("Could not find PortAudio library")
-
-PORTAUDIO_LIB = find_portaudio()
 print(f"Using PortAudio library at: {PORTAUDIO_LIB}")
 
 OPTIONS = {
@@ -56,8 +37,7 @@ OPTIONS = {
     'includes': ['numpy', 'whisper', 'pyautogui'],
     'excludes': ['matplotlib', 'tkinter', 'PyQt5', 'wx', 'test'],
     'resources': ['src/assets'],
-    'binary_includes': [PORTAUDIO_LIB],  # Include PortAudio binary
-    'frameworks': [PORTAUDIO_LIB],  # Also include as framework
+    'site_packages': True,  # Include all site-packages
     'strip': True,
     'plist': {
         'CFBundleName': 'TalkToMe',
