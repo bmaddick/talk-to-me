@@ -24,28 +24,21 @@ jobs:
         PORTAUDIO_PREFIX=$(brew --prefix portaudio)
         PORTAUDIO_LIB="$PORTAUDIO_PREFIX/lib/libportaudio.2.dylib"
 
-        # Create framework structure
-        FRAMEWORK_DIR="Frameworks"
-        FRAMEWORK_NAME="libportaudio.2.dylib.framework"
-        mkdir -p "$FRAMEWORK_DIR/$FRAMEWORK_NAME/Versions/A"
-        cp "$PORTAUDIO_LIB" "$FRAMEWORK_DIR/$FRAMEWORK_NAME/Versions/A/"
+        # Create lib directory and copy PortAudio
+        mkdir -p lib
+        cp "$PORTAUDIO_LIB" lib/
+        chmod 644 lib/libportaudio.2.dylib
 
-        cd "$FRAMEWORK_DIR/$FRAMEWORK_NAME/Versions"
-        ln -sf A Current
-        cd ..
-        ln -sf Versions/Current/libportaudio.2.dylib libportaudio.2.dylib
-        cd ../..
+        # Fix library install name
+        install_name_tool -id "@rpath/libportaudio.2.dylib" lib/libportaudio.2.dylib
 
-        # Fix framework install name
-        install_name_tool -id "@rpath/$FRAMEWORK_NAME/libportaudio.2.dylib" \
-          "$FRAMEWORK_DIR/$FRAMEWORK_NAME/Versions/A/libportaudio.2.dylib"
-
-        echo "PORTAUDIO_FRAMEWORK=$PWD/$FRAMEWORK_DIR/$FRAMEWORK_NAME" >> $GITHUB_ENV
+        echo "PORTAUDIO_LIB=$PWD/lib/libportaudio.2.dylib" >> $GITHUB_ENV
+        echo "DYLD_LIBRARY_PATH=$PWD/lib:$DYLD_LIBRARY_PATH" >> $GITHUB_ENV
 
     - name: Install Dependencies
       run: |
         python -m pip install --upgrade pip setuptools wheel
-        pip install --use-pep517 pyaudio
+        PORTAUDIO_PATH=$(brew --prefix portaudio) pip install --use-pep517 pyaudio
         pip install -r requirements.txt
         pip install py2app --use-pep517
 
@@ -53,20 +46,23 @@ jobs:
       run: |
         rm -rf dist build
 
+        # Show library info for debugging
+        otool -L lib/libportaudio.2.dylib
+
         # Build with verbose output
         python setup.py py2app -vv
 
-        # Copy framework to app bundle
-        mkdir -p dist/TalkToMe.app/Contents/Frameworks
-        cp -R "$PORTAUDIO_FRAMEWORK" dist/TalkToMe.app/Contents/Frameworks/
+        # Copy library to app bundle
+        mkdir -p dist/TalkToMe.app/Contents/lib
+        cp lib/libportaudio.2.dylib dist/TalkToMe.app/Contents/lib/
 
         # Fix library references
         PYAUDIO_SO=$(find dist/TalkToMe.app -name "_portaudio.so")
         if [ -n "$PYAUDIO_SO" ]; then
           chmod +w "$PYAUDIO_SO"
           install_name_tool -change "@rpath/libportaudio.2.dylib" \
-            "@rpath/$FRAMEWORK_NAME/libportaudio.2.dylib" "$PYAUDIO_SO"
-          install_name_tool -add_rpath "@executable_path/../Frameworks" "$PYAUDIO_SO"
+            "@executable_path/../lib/libportaudio.2.dylib" "$PYAUDIO_SO"
+          install_name_tool -add_rpath "@executable_path/../lib" "$PYAUDIO_SO"
         fi
 
     - name: Create DMG
