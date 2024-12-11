@@ -22,20 +22,35 @@ jobs:
       run: |
         brew install portaudio
         mkdir -p lib
+        # Debug output
+        echo "PortAudio location: $(brew --prefix portaudio)"
+        echo "Library files:"
+        ls -la $(brew --prefix portaudio)/lib/
+        # Copy and fix library
         cp $(brew --prefix portaudio)/lib/libportaudio.2.dylib lib/
-        # Fix library install name
+        # Fix library install name and verify
         install_name_tool -id "@rpath/libportaudio.2.dylib" lib/libportaudio.2.dylib
+        otool -L lib/libportaudio.2.dylib
+        echo "Copied library location:"
+        ls -la lib/
 
     - name: Install Dependencies
       run: |
         python -m pip install --upgrade pip setuptools wheel
         pip install pyinstaller pyaudio
         pip install -r requirements.txt
+        # Debug PyAudio installation
+        python -c "import pyaudio; print('PyAudio version:', pyaudio.__version__)"
 
     - name: Build App
       run: |
         # Clean previous builds
         rm -rf dist build
+
+        # Debug environment
+        echo "Current directory: $PWD"
+        echo "Library location:"
+        ls -la lib/
 
         # Create spec file
         cat > TalkToMe.spec << EOL
@@ -97,8 +112,8 @@ jobs:
         )
         EOL
 
-        # Build with PyInstaller
-        pyinstaller TalkToMe.spec
+        # Build with PyInstaller with debug output
+        pyinstaller --debug TalkToMe.spec
 
         # Create DMG structure
         mkdir -p dmg
