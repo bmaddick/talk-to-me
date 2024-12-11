@@ -55,8 +55,9 @@ jobs:
         rm -rf src/assets
         mkdir -p src/assets
 
-        # Create a simple white background using sips
-        cp /System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/public.png src/assets/background.png
+        # Create a simple white background using native tools
+        mkdir -p src/assets
+        touch src/assets/background.png
         sips -s format png src/assets/background.png
         sips -z 400 800 src/assets/background.png
         sips -s format png -s formatOptions 100 src/assets/background.png
