@@ -52,11 +52,10 @@ jobs:
         rm -rf src/assets
         mkdir -p src/assets
 
-        # Create a simple white background for DMG
-        mkdir -p src/assets
-        echo "Creating white background..."
-        osascript -e 'tell application "System Events" to tell disk "Macintosh HD" to set picture of desktop to missing value'
-        screencapture -R 0,0,800,400 src/assets/background.png
+        # Create a blank PNG file for background
+        touch src/assets/blank.png
+        sips -s format png src/assets/blank.png --out src/assets/background.png
+        sips -z 400 800 src/assets/background.png
 
         # Use system app icon
         cp /System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/GenericApplicationIcon.icns src/assets/AppIcon.icns
