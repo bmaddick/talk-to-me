@@ -117,7 +117,7 @@ jobs:
         EOL
 
         # Build with PyInstaller with proper debug flags
-        pyinstaller -d all TalkToMe.spec
+        pyinstaller -d imports -d bootloader TalkToMe.spec
 
         # Verify the built app structure
         echo "Built app contents:"
