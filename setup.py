@@ -8,16 +8,15 @@ sys.setrecursionlimit(5000)
 # Get PortAudio path from environment or Homebrew
 def get_portaudio_path():
     if 'PORTAUDIO_PATH' in os.environ:
-        return os.environ['PORTAUDIO_PATH']
+        return os.path.join(os.environ['PORTAUDIO_PATH'], 'lib', 'libportaudio.2.dylib')
     try:
         result = subprocess.run(['brew', '--prefix', 'portaudio'],
                               capture_output=True, text=True, check=True)
-        return result.stdout.strip()
+        return os.path.join(result.stdout.strip(), 'lib', 'libportaudio.2.dylib')
     except:
         return None
 
-portaudio_path = get_portaudio_path()
-portaudio_lib = os.path.join(portaudio_path, 'lib', 'libportaudio.2.dylib') if portaudio_path else None
+portaudio_lib = get_portaudio_path()
 
 APP = ['src/main.py']
 DATA_FILES = [
