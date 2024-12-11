@@ -37,7 +37,7 @@ jobs:
         chmod +x build/frameworks/libportaudio.2.dylib
 
         # Fix library install name and verify
-        install_name_tool -id "@rpath/libportaudio.2.dylib" build/frameworks/libportaudio.2.dylib
+        install_name_tool -id "@executable_path/../Frameworks/libportaudio.2.dylib" build/frameworks/libportaudio.2.dylib
         otool -L build/frameworks/libportaudio.2.dylib
 
     - name: Install Python Dependencies
