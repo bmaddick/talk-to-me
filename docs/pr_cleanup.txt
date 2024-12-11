@@ -1,0 +1,16 @@
+# PR Cleanup Status
+- [x] PR #62 - Keep (Main solution using PyInstaller)
+- [x] Close redundant PRs (PRs #33-61) - DONE
+  - All PRs were attempts to fix PortAudio integration
+  - Closed in favor of PR #62's PyInstaller solution
+
+# Next Steps
+- [ ] Merge PR #62 (after verification)
+- [ ] Create release with DMG file
+- [ ] Update installation instructions
+
+# Notes
+- PyInstaller solution (PR #62) resolves PortAudio bundling issues
+- Simplified library handling and build process
+- Improved DMG creation workflow
+- All redundant PRs have been closed with appropriate comments
