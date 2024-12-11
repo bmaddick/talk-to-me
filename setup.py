@@ -1,45 +1,23 @@
-import sys
+"""
+Setup script for building the TalkToMe application.
+"""
 import os
-import subprocess
 from setuptools import setup
 
-sys.setrecursionlimit(5000)
+def find_portaudio():
+    """Find the PortAudio library."""
+    portaudio_path = os.path.join('lib', 'libportaudio.2.dylib')
+    if os.path.exists(portaudio_path):
+        print(f"Found PortAudio at: {portaudio_path}")
+        return portaudio_path
+    raise ValueError("PortAudio library not found")
 
-def get_portaudio_path():
-    try:
-        result = subprocess.run(['brew', '--prefix', 'portaudio'],
-                             capture_output=True, text=True, check=True)
-        prefix = result.stdout.strip()
-        lib_path = os.path.join(prefix, 'lib', 'libportaudio.2.dylib')
-        if not os.path.exists(lib_path):
-            raise ValueError(f"PortAudio library not found at {lib_path}")
-        print(f"Found PortAudio at: {lib_path}")
-
-        # Create lib directory if it doesn't exist
-        os.makedirs('lib', exist_ok=True)
-
-        # Copy PortAudio to local lib directory
-        local_lib_path = os.path.join('lib', 'libportaudio.2.dylib')
-        subprocess.run(['cp', lib_path, local_lib_path], check=True)
-        subprocess.run(['chmod', '644', local_lib_path], check=True)
-
-        # Fix library install name with executable_path
-        subprocess.run(['install_name_tool', '-id', '@executable_path/../lib/libportaudio.2.dylib', local_lib_path], check=True)
-        print(f"Configured PortAudio at: {local_lib_path}")
-
-        return local_lib_path
-    except Exception as e:
-        print(f"Error finding PortAudio: {e}")
-        return None
-
-PORTAUDIO_LIB = get_portaudio_path()
-if not PORTAUDIO_LIB:
-    raise ValueError("PortAudio not found. Install with 'brew install portaudio'")
+PORTAUDIO_LIB = find_portaudio()
 
 APP = ['src/main.py']
 DATA_FILES = [
-    ('assets', ['src/assets/AppIcon.icns', 'src/assets/background.png']),
-    ('lib', [PORTAUDIO_LIB])  # Bundle PortAudio in lib directory
+    ('assets', ['src/assets/AppIcon.icns']),
+    ('lib', [PORTAUDIO_LIB]),
 ]
 
 OPTIONS = {
@@ -67,7 +45,6 @@ OPTIONS = {
     'resources': ['src/assets'],
     'strip': True,
     'site_packages': True,
-    'recipes': ['src/recipes'],
     'plist': {
         'CFBundleName': 'TalkToMe',
         'CFBundleDisplayName': 'TalkToMe',
