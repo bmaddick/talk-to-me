@@ -6,13 +6,18 @@ from setuptools import setup
 
 def find_portaudio():
     """Find the PortAudio library."""
-    lib_path = os.path.join('lib', 'libportaudio.2.dylib')
-    if os.path.exists(lib_path):
-        print(f"Found PortAudio at: {lib_path}")
-        return lib_path
-    raise ValueError("PortAudio library not found")
+    # Check common locations for PortAudio
+    search_paths = [
+        os.path.join('lib', 'libportaudio.2.dylib'),
+        '/usr/local/lib/libportaudio.2.dylib',
+        '/opt/homebrew/lib/libportaudio.2.dylib'
+    ]
 
-PORTAUDIO_LIB = find_portaudio()
+    for path in search_paths:
+        if os.path.exists(path):
+            print(f"Found PortAudio at: {path}")
+            return path
+    raise ValueError("PortAudio library not found")
 
 APP = ['src/main.py']
 DATA_FILES = [
@@ -28,8 +33,7 @@ OPTIONS = {
     'resources': ['src/assets'],
     'strip': True,
     'optimize': 2,
-    'frameworks': [PORTAUDIO_LIB],
-    'dylib_excludes': [],
+    'dylibs': [find_portaudio()],  # Changed from 'frameworks' to 'dylibs'
     'site_packages': True,
     'plist': {
         'CFBundleName': 'TalkToMe',
