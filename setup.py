@@ -47,8 +47,7 @@ OPTIONS = {
         'pyaudio',
         'tiktoken',
         'torch',
-        'rubicon',
-        'rubicon.objc',
+        'rubicon_objc',
         'Foundation',
         'AppKit'
     ],
@@ -56,13 +55,12 @@ OPTIONS = {
         'numpy',
         'whisper',
         'pyautogui',
-        'rubicon.objc',
+        'rubicon_objc',
         'Foundation',
         'AppKit'
     ],
     'excludes': ['matplotlib', 'tkinter', 'PyQt5', 'wx', 'test'],
     'resources': ['src/assets'],
-    'frameworks': [PORTAUDIO_LIB],
     'strip': True,
     'plist': {
         'CFBundleName': 'TalkToMe',
@@ -96,7 +94,8 @@ setup(
         'numpy',
         'openai-whisper',
         'pyautogui',
-        'rubicon-objc',
+        'rubicon-objc>=0.4.7',
+        'py2app>=0.28.6'
     ],
     version='1.0.0',
     description='Voice to text for any application',
