@@ -48,25 +48,16 @@ jobs:
     - name: Create App Icon and Background
       run: |
         # Clean up any existing directories
-        rm -rf src/assets
+        rm -rf src/assets AppIcon.iconset
         mkdir -p src/assets
 
-        # Create a simple app icon using system tools
-        mkdir -p AppIcon.iconset
-        for size in 16 32 128 256 512; do
-          sips -z $size $size /System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/GenericApplicationIcon.icns --out AppIcon.iconset/icon_${size}x${size}.png
-          if [ $size -lt 512 ]; then
-            sips -z $((size*2)) $((size*2)) /System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/GenericApplicationIcon.icns --out AppIcon.iconset/icon_${size}x${size}@2x.png
-          fi
-        done
-
-        # Convert to icns
-        iconutil -c icns AppIcon.iconset
-        mv AppIcon.icns src/assets/
-
-        # Create white background using native tools
-        screencapture -C -T 0 src/assets/background.png
+        # Create a white background using screencapture
+        screencapture -T 0 -R "0,0,800,400" src/assets/background.png
+        sips -s format png src/assets/background.png
         sips -z 400 800 src/assets/background.png
+
+        # Use system app icon as base
+        cp /System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/GenericApplicationIcon.icns src/assets/AppIcon.icns
 
     - name: Build App
       run: |
