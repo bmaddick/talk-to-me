@@ -63,7 +63,7 @@ jobs:
         sips -z 400 800 src/assets/background.png
         sips -s format png -s formatOptions 100 src/assets/background.png
 
-        # Use system app icon for initial release
+        # Create a simple app icon using system resources
         cp /System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/GenericApplicationIcon.icns src/assets/AppIcon.icns
 
     - name: Build App
