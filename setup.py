@@ -26,16 +26,34 @@ if not PORTAUDIO_LIB:
 APP = ['src/main.py']
 DATA_FILES = [
     ('assets', ['src/assets/AppIcon.icns', 'src/assets/background.png']),
-    ('Frameworks', [PORTAUDIO_LIB])  # Bundle PortAudio in Frameworks directory
+    ('lib', [PORTAUDIO_LIB])  # Bundle PortAudio in lib directory
 ]
 
 OPTIONS = {
     'argv_emulation': False,
     'iconfile': 'src/assets/AppIcon.icns',
-    'packages': ['numpy', 'whisper', 'pyaudio', 'tiktoken', 'torch'],
-    'includes': ['numpy', 'whisper', 'pyautogui'],
+    'packages': [
+        'numpy',
+        'whisper',
+        'pyaudio',
+        'tiktoken',
+        'torch',
+        'rubicon',
+        'rubicon.objc',
+        'Foundation',
+        'AppKit'
+    ],
+    'includes': [
+        'numpy',
+        'whisper',
+        'pyautogui',
+        'rubicon.objc',
+        'Foundation',
+        'AppKit'
+    ],
     'excludes': ['matplotlib', 'tkinter', 'PyQt5', 'wx', 'test'],
     'resources': ['src/assets'],
+    'frameworks': [PORTAUDIO_LIB],
     'strip': True,
     'plist': {
         'CFBundleName': 'TalkToMe',
@@ -69,6 +87,7 @@ setup(
         'numpy',
         'openai-whisper',
         'pyautogui',
+        'rubicon-objc',
     ],
     version='1.0.0',
     description='Voice to text for any application',

@@ -24,21 +24,21 @@ jobs:
         PORTAUDIO_PREFIX=$(brew --prefix portaudio)
         PORTAUDIO_LIB="$PORTAUDIO_PREFIX/lib/libportaudio.2.dylib"
 
-        # Create Frameworks directory and copy PortAudio
-        mkdir -p Frameworks
-        cp "$PORTAUDIO_LIB" Frameworks/
-        chmod 644 Frameworks/libportaudio.2.dylib
+        # Create lib directory and copy PortAudio
+        mkdir -p lib
+        cp "$PORTAUDIO_LIB" lib/
+        chmod 644 lib/libportaudio.2.dylib
 
         # Fix library install name
-        install_name_tool -id "@rpath/libportaudio.2.dylib" Frameworks/libportaudio.2.dylib
+        install_name_tool -id "@rpath/libportaudio.2.dylib" lib/libportaudio.2.dylib
 
-        echo "PORTAUDIO_LIB=$PWD/Frameworks/libportaudio.2.dylib" >> $GITHUB_ENV
-        echo "DYLD_LIBRARY_PATH=$PWD/Frameworks:$DYLD_LIBRARY_PATH" >> $GITHUB_ENV
-        echo "DYLD_FRAMEWORK_PATH=$PWD/Frameworks:$DYLD_FRAMEWORK_PATH" >> $GITHUB_ENV
+        echo "PORTAUDIO_LIB=$PWD/lib/libportaudio.2.dylib" >> $GITHUB_ENV
+        echo "DYLD_LIBRARY_PATH=$PWD/lib:$DYLD_LIBRARY_PATH" >> $GITHUB_ENV
 
     - name: Install Dependencies
       run: |
         python -m pip install --upgrade pip setuptools wheel
+        pip install --use-pep517 rubicon-objc
         PORTAUDIO_PATH=$(brew --prefix portaudio) pip install --use-pep517 pyaudio
         pip install -r requirements.txt
         pip install py2app --use-pep517
@@ -49,6 +49,7 @@ jobs:
 
         # Show library info for debugging
         otool -L "$PORTAUDIO_LIB"
+        otool -L lib/libportaudio.2.dylib
 
         # Build with verbose output
         python setup.py py2app -vv
@@ -58,9 +59,13 @@ jobs:
         if [ -n "$PYAUDIO_SO" ]; then
           chmod +w "$PYAUDIO_SO"
           install_name_tool -change "@rpath/libportaudio.2.dylib" \
-            "@executable_path/../Frameworks/libportaudio.2.dylib" "$PYAUDIO_SO"
-          install_name_tool -add_rpath "@executable_path/../Frameworks" "$PYAUDIO_SO"
+            "@executable_path/../lib/libportaudio.2.dylib" "$PYAUDIO_SO"
+          install_name_tool -add_rpath "@executable_path/../lib" "$PYAUDIO_SO"
         fi
+
+        # Copy PortAudio library to app bundle
+        mkdir -p dist/TalkToMe.app/Contents/lib
+        cp lib/libportaudio.2.dylib dist/TalkToMe.app/Contents/lib/
 
     - name: Create DMG
       run: |
