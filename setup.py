@@ -23,6 +23,10 @@ def get_portaudio_path():
         subprocess.run(['cp', lib_path, local_lib_path], check=True)
         subprocess.run(['chmod', '644', local_lib_path], check=True)
 
+        # Fix library install name
+        subprocess.run(['install_name_tool', '-id', '@rpath/libportaudio.2.dylib', local_lib_path], check=True)
+        print(f"Configured PortAudio at: {local_lib_path}")
+
         return local_lib_path
     except Exception as e:
         print(f"Error finding PortAudio: {e}")
@@ -62,6 +66,9 @@ OPTIONS = {
     'excludes': ['matplotlib', 'tkinter', 'PyQt5', 'wx', 'test'],
     'resources': ['src/assets'],
     'strip': True,
+    'frameworks': ['lib/libportaudio.2.dylib'],  # Add PortAudio as framework
+    'dylib_excludes': ['libportaudio.2.dylib.framework'],  # Exclude framework search
+    'site_packages': True,
     'plist': {
         'CFBundleName': 'TalkToMe',
         'CFBundleDisplayName': 'TalkToMe',
