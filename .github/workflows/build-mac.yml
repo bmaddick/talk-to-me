@@ -22,8 +22,10 @@ jobs:
       run: |
         brew install create-dmg
         brew install portaudio
-        echo "PORTAUDIO_PATH=$(brew --prefix portaudio)" >> $GITHUB_ENV
-        echo "Installed system dependencies successfully"
+        PORTAUDIO_PATH=$(brew --prefix portaudio)
+        echo "PORTAUDIO_PATH=$PORTAUDIO_PATH" >> $GITHUB_ENV
+        echo "Found PortAudio at: $PORTAUDIO_PATH"
+        ls -l $PORTAUDIO_PATH/lib/
 
     - name: Create App Assets
       run: |
@@ -48,28 +50,32 @@ jobs:
         python -m pip install --upgrade pip setuptools wheel
         python -m pip install --use-pep517 -r requirements.txt
         python -m pip install --use-pep517 py2app
+        python -c "import pyaudio; print('PyAudio location:', pyaudio.__file__)"
         echo "Installed Python dependencies successfully"
 
-    - name: Bundle Libraries
+    - name: Prepare Frameworks
       run: |
-        chmod +x bundle_libraries.sh
-        ./bundle_libraries.sh
-        ls -la lib/
-        otool -L lib/libportaudio.2.dylib
-        echo "Libraries bundled successfully"
+        chmod +x prepare_frameworks.sh
+        ./prepare_frameworks.sh
+        echo "Frameworks prepared successfully"
+        ls -la Frameworks/
+        otool -L Frameworks/libportaudio.2.dylib
 
     - name: Build App
       run: |
         # Set environment variables
-        export DYLD_LIBRARY_PATH="$PWD/lib:$DYLD_LIBRARY_PATH"
-        export LIBRARY_PATH="$PWD/lib:$LIBRARY_PATH"
+        export DYLD_LIBRARY_PATH="$PWD/Frameworks:$DYLD_LIBRARY_PATH"
+        export LIBRARY_PATH="$PWD/Frameworks:$LIBRARY_PATH"
         export PKG_CONFIG_PATH="$PORTAUDIO_PATH/lib/pkgconfig:$PKG_CONFIG_PATH"
 
-        # Clean any previous builds
+        # Clean previous builds
         rm -rf build dist
 
-        # Build with verbose output
-        python setup.py py2app -v
+        # Build with maximum verbosity
+        python setup.py py2app -vv
+
+        # Verify app bundle structure
+        ls -R dist/TalkToMe.app/Contents/Frameworks/
 
     - name: Create DMG
       run: |
