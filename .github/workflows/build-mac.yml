@@ -20,22 +20,31 @@ jobs:
 
     - name: Install PortAudio
       run: |
+        # Install PortAudio using Homebrew
         brew install portaudio
-        chmod +x prepare_framework.sh
-        ./prepare_framework.sh
-        otool -L PortAudio.framework/Versions/Current/PortAudio
+
+        # Create direct library link
+        mkdir -p lib
+        cp $(brew --prefix portaudio)/lib/libportaudio.2.dylib lib/
+        chmod +x lib/libportaudio.2.dylib
+
+        # Fix library install name
+        install_name_tool -id "@executable_path/../Frameworks/libportaudio.2.dylib" lib/libportaudio.2.dylib
+
+        # Debug output
+        otool -L lib/libportaudio.2.dylib
 
     - name: Install Dependencies
       run: |
         python -m pip install --upgrade pip setuptools wheel
-        pip install --use-pep517 rubicon-objc py2app
 
-        # Install PyAudio with system PortAudio
-        export DYLD_FRAMEWORK_PATH="$PWD:$DYLD_FRAMEWORK_PATH"
-        export LIBRARY_PATH="$PWD/PortAudio.framework/Versions/Current:$LIBRARY_PATH"
+        # Install PyAudio with direct library path
+        export LIBRARY_PATH="$PWD/lib:$LIBRARY_PATH"
+        export DYLD_LIBRARY_PATH="$PWD/lib:$DYLD_LIBRARY_PATH"
         pip install --no-cache-dir pyaudio
 
         # Install remaining dependencies
+        pip install --use-pep517 rubicon-objc py2app
         pip install -r requirements.txt
 
     - name: Build App
@@ -43,8 +52,9 @@ jobs:
         # Clean previous builds
         rm -rf dist build
 
-        # Set framework path
-        export DYLD_FRAMEWORK_PATH="$PWD:$DYLD_FRAMEWORK_PATH"
+        # Set library path for build
+        export DYLD_LIBRARY_PATH="$PWD/lib:$DYLD_LIBRARY_PATH"
+        export LIBRARY_PATH="$PWD/lib:$LIBRARY_PATH"
 
         # Build with verbose output
         python setup.py py2app -vv
