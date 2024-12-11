@@ -25,19 +25,15 @@ jobs:
         PORTAUDIO_LIB="$PORTAUDIO_PREFIX/lib/libportaudio.2.dylib"
 
         # Create lib directory and copy PortAudio
-        mkdir -p lib/libportaudio.2.dylib.framework/Versions/A
-        cp "$PORTAUDIO_LIB" lib/libportaudio.2.dylib.framework/Versions/A/
-        chmod 755 lib/libportaudio.2.dylib.framework/Versions/A/libportaudio.2.dylib
-
-        # Create framework symlinks
-        cd lib/libportaudio.2.dylib.framework
-        ln -s Versions/A/libportaudio.2.dylib libportaudio.2.dylib
-        cd Versions
-        ln -s A Current
+        mkdir -p lib
+        cp "$PORTAUDIO_LIB" lib/
+        chmod 755 lib/libportaudio.2.dylib
 
         # Set environment variables for build
-        echo "DYLD_LIBRARY_PATH=$PWD/lib/libportaudio.2.dylib.framework:$DYLD_LIBRARY_PATH" >> $GITHUB_ENV
-        echo "LIBRARY_PATH=$PWD/lib/libportaudio.2.dylib.framework:$LIBRARY_PATH" >> $GITHUB_ENV
+        echo "DYLD_LIBRARY_PATH=$PWD/lib:$DYLD_LIBRARY_PATH" >> $GITHUB_ENV
+        echo "LIBRARY_PATH=$PWD/lib:$LIBRARY_PATH" >> $GITHUB_ENV
+        echo "LDFLAGS=-L$PWD/lib" >> $GITHUB_ENV
+        echo "CFLAGS=-I$PORTAUDIO_PREFIX/include" >> $GITHUB_ENV
 
     - name: Install Dependencies
       run: |
@@ -46,9 +42,7 @@ jobs:
         pip install --use-pep517 py2app
 
         # Install PyAudio with PortAudio path
-        export LDFLAGS="-L$PWD/lib/libportaudio.2.dylib.framework/Versions/A"
-        export CFLAGS="-I$(brew --prefix portaudio)/include"
-        DYLD_LIBRARY_PATH=$PWD/lib/libportaudio.2.dylib.framework pip install --use-pep517 pyaudio
+        pip install --use-pep517 pyaudio
 
         # Install remaining dependencies
         pip install -r requirements.txt
