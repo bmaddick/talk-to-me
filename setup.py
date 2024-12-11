@@ -1,12 +1,16 @@
 import sys
 import os
+import subprocess
 from setuptools import setup
 
 sys.setrecursionlimit(5000)
 
-# Get path to PortAudio library
-portaudio_lib = os.path.join(os.getcwd(), 'build', 'frameworks', 'libportaudio.2.dylib')
-os.makedirs(os.path.dirname(portaudio_lib), exist_ok=True)
+# Get PortAudio library path from Homebrew
+try:
+    portaudio_lib = subprocess.check_output(['brew', '--prefix', 'portaudio']).decode().strip()
+    portaudio_lib = os.path.join(portaudio_lib, 'lib', 'libportaudio.2.dylib')
+except:
+    portaudio_lib = '/usr/local/lib/libportaudio.2.dylib'
 
 APP = ['src/main.py']
 DATA_FILES = [
@@ -21,8 +25,7 @@ OPTIONS = {
     'excludes': ['matplotlib', 'tkinter', 'PyQt5', 'wx', 'test'],
     'resources': ['src/assets'],
     'strip': True,
-    'frameworks': [portaudio_lib],
-    'dylib_excludes': ['libportaudio.2.dylib'],
+    'dylibs': [portaudio_lib],
     'site_packages': True,
     'plist': {
         'CFBundleName': 'TalkToMe',
