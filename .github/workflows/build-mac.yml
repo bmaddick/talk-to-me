@@ -23,18 +23,18 @@ jobs:
         # Install PortAudio
         brew install portaudio
         PORTAUDIO_PATH=$(brew --prefix portaudio)
+        PORTAUDIO_LIB="$PORTAUDIO_PATH/lib/libportaudio.2.dylib"
         echo "PORTAUDIO_PATH=$PORTAUDIO_PATH" >> $GITHUB_ENV
+        echo "PORTAUDIO_LIB=$PORTAUDIO_LIB" >> $GITHUB_ENV
 
-        # Create lib directory and copy PortAudio
-        mkdir -p lib
-        cp "$PORTAUDIO_PATH/lib/libportaudio.2.dylib" lib/
-        chmod +x lib/libportaudio.2.dylib
-
-        # Fix library install name
-        install_name_tool -id "@rpath/libportaudio.2.dylib" lib/libportaudio.2.dylib
+        # Create Frameworks directory
+        mkdir -p Frameworks
+        cp "$PORTAUDIO_LIB" Frameworks/
+        chmod +x Frameworks/libportaudio.2.dylib
+        install_name_tool -id "@rpath/libportaudio.2.dylib" Frameworks/libportaudio.2.dylib
 
         # Verify library setup
-        otool -L lib/libportaudio.2.dylib
+        otool -L Frameworks/libportaudio.2.dylib
 
     - name: Create App Assets
       run: |
@@ -64,7 +64,7 @@ jobs:
         python -c "
         import pyaudio, os
         print('PyAudio:', pyaudio.__file__)
-        print('PortAudio lib exists:', os.path.exists('lib/libportaudio.2.dylib'))
+        print('PortAudio lib exists:', os.path.exists('Frameworks/libportaudio.2.dylib'))
         "
 
     - name: Build App
@@ -72,11 +72,20 @@ jobs:
         # Clean previous builds
         rm -rf dist build
 
-        # Set library path for build
-        export DYLD_LIBRARY_PATH="$PWD/lib:$DYLD_LIBRARY_PATH"
+        # Copy Frameworks to app bundle
+        mkdir -p dist/TalkToMe.app/Contents/Frameworks
+        cp Frameworks/libportaudio.2.dylib dist/TalkToMe.app/Contents/Frameworks/
 
         # Build with verbose output
+        DYLD_LIBRARY_PATH="$PWD/Frameworks:$DYLD_LIBRARY_PATH" \
         PYTHONPATH="$PWD" python setup.py py2app -vv
+
+        # Fix library references in PyAudio extension
+        PYAUDIO_SO=$(find dist/TalkToMe.app -name "_portaudio.so")
+        if [ -n "$PYAUDIO_SO" ]; then
+          install_name_tool -change "$PORTAUDIO_LIB" \
+            "@rpath/libportaudio.2.dylib" "$PYAUDIO_SO"
+        fi
 
         # Verify app bundle
         echo "App bundle contents:"
