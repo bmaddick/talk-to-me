@@ -1,5 +1,6 @@
 import sys
 import os
+import site
 from setuptools import setup
 
 sys.setrecursionlimit(5000)
@@ -9,26 +10,9 @@ DATA_FILES = [
     ('assets', ['src/assets/AppIcon.icns', 'src/assets/background.png'])
 ]
 
-# Get PortAudio path from environment or use default Homebrew location
-PORTAUDIO_PATH = os.getenv('PORTAUDIO_PATH', '/opt/homebrew/opt/portaudio')
-PORTAUDIO_LIB = os.path.join(PORTAUDIO_PATH, 'lib', 'libportaudio.2.dylib')
-
-if not os.path.exists(PORTAUDIO_LIB):
-    print(f"Warning: PortAudio library not found at {PORTAUDIO_LIB}")
-    print("Searching in common locations...")
-    common_paths = [
-        '/usr/local/lib/libportaudio.2.dylib',
-        '/opt/local/lib/libportaudio.2.dylib',
-        '/usr/lib/libportaudio.2.dylib'
-    ]
-    for path in common_paths:
-        if os.path.exists(path):
-            PORTAUDIO_LIB = path
-            break
-    else:
-        raise ValueError("Could not find PortAudio library in any common location")
-
-print(f"Using PortAudio library at: {PORTAUDIO_LIB}")
+# Get site-packages directory
+site_packages = site.getsitepackages()[0]
+pyaudio_path = os.path.join(site_packages, 'pyaudio')
 
 OPTIONS = {
     'argv_emulation': False,
@@ -36,7 +20,7 @@ OPTIONS = {
     'packages': ['numpy', 'whisper', 'pyaudio', 'tiktoken', 'torch'],
     'includes': ['numpy', 'whisper', 'pyaudio._portaudio', 'pyautogui'],
     'excludes': ['matplotlib', 'tkinter', 'PyQt5', 'wx', 'test'],
-    'dylibs': [PORTAUDIO_LIB],  # Use dylibs option for dynamic libraries
+    'site_packages': True,  # Include all site-packages
     'resources': ['src/assets'],
     'strip': True,
     'plist': {
