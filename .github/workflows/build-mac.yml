@@ -43,17 +43,12 @@ jobs:
         # Clean previous builds
         rm -rf dist build
 
-        # Debug environment and library paths
+        # Debug environment
         echo "Current directory: $PWD"
-        echo "Checking PortAudio installation:"
-        brew list portaudio
         echo "PortAudio library location:"
-        ls -la $(brew --prefix portaudio)/lib/
-        echo "Library paths:"
-        echo "DYLD_LIBRARY_PATH: $DYLD_LIBRARY_PATH"
-        echo "LIBRARY_PATH: $LIBRARY_PATH"
+        ls -la /opt/homebrew/opt/portaudio/lib/
 
-        # Create spec file with explicit library handling
+        # Create spec file with correct library path
         cat > TalkToMe.spec << EOL
         # -*- mode: python ; coding: utf-8 -*-
         import os
@@ -62,17 +57,17 @@ jobs:
 
         block_cipher = None
 
-        # Get Homebrew PortAudio path
-        portaudio_path = '/opt/homebrew/opt/portaudio/lib/libportaudio.2.dylib'
-        print(f'Looking for PortAudio at: {portaudio_path}')
-        if not os.path.exists(portaudio_path):
-            print(f'ERROR: PortAudio library not found at {portaudio_path}')
+        # Get PortAudio path from Homebrew
+        portaudio_lib = '/opt/homebrew/opt/portaudio/lib/libportaudio.2.dylib'
+        if not os.path.exists(portaudio_lib):
+            print(f'ERROR: PortAudio library not found at {portaudio_lib}')
             sys.exit(1)
+        print(f'Found PortAudio at: {portaudio_lib}')
 
         a = Analysis(
             ['src/main.py'],
-            pathex=[os.getcwd()],
-            binaries=[(portaudio_path, '.')],
+            pathex=[os.getcwd(), '/opt/homebrew/opt/portaudio/lib'],
+            binaries=[(portaudio_lib, '.')],
             datas=[],
             hiddenimports=['pyaudio', 'numpy.core.multiarray', 'whisper'],
             hookspath=[],
@@ -84,7 +79,9 @@ jobs:
             cipher=block_cipher,
             noarchive=False,
         )
+
         pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
+
         exe = EXE(
             pyz,
             a.scripts,
@@ -102,6 +99,7 @@ jobs:
             codesign_identity=None,
             entitlements_file=None,
         )
+
         coll = COLLECT(
             exe,
             a.binaries,
@@ -112,6 +110,7 @@ jobs:
             upx_exclude=[],
             name='TalkToMe'
         )
+
         app = BUNDLE(
             coll,
             name='TalkToMe.app',
@@ -125,7 +124,7 @@ jobs:
         EOL
 
         # Build with PyInstaller
-        pyinstaller TalkToMe.spec --log-level DEBUG
+        pyinstaller TalkToMe.spec
 
         # Verify the built app structure
         echo "Built app contents:"
