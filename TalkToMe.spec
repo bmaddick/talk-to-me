@@ -83,9 +83,13 @@ app = BUNDLE(
         'CFBundleShortVersionString': '1.0.0',
         'LSBackgroundOnly': False,  # Ensure app is not background-only
         'NSHighResolutionCapable': True,
-        'NSRequiresAquaSystemAppearance': False,
+        'NSRequiresAquaSystemAppearance': True,  # Force Aqua appearance for better menu bar visibility
         'NSSupportsAutomaticGraphicsSwitching': True,
         'CFBundleDisplayName': 'TalkToMe',  # Ensure proper display name
         'CFBundleName': 'TalkToMe',  # Ensure proper bundle name
+        'NSAppSleepDisabled': False,  # Allow app to sleep normally
+        'LSMinimumSystemVersion': '10.13',  # Set minimum macOS version
+        'NSAppleScriptEnabled': True,  # Enable AppleScript for system interactions
+        'NSPrincipalClass': 'NSApplication',  # Ensure proper application class
     }
 )
