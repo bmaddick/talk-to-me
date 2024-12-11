@@ -1,50 +1,63 @@
 import sys
-sys.setrecursionlimit(5000)  # Increase recursion limit for py2app
-
+import os
 from setuptools import setup
 
+sys.setrecursionlimit(5000)
+
 APP = ['src/main.py']
-DATA_FILES = [('assets', ['src/assets/AppIcon.icns', 'src/assets/background.png'])]
+DATA_FILES = [
+    ('assets', ['src/assets/AppIcon.icns', 'src/assets/background.png'])
+]
+
+# Get PortAudio path from environment or use default Homebrew location
+PORTAUDIO_PATH = os.getenv('PORTAUDIO_PATH', '/opt/homebrew/opt/portaudio')
+PORTAUDIO_LIB = os.path.join(PORTAUDIO_PATH, 'lib', 'libportaudio.2.dylib')
+
+if not os.path.exists(PORTAUDIO_LIB):
+    print(f"Warning: PortAudio library not found at {PORTAUDIO_LIB}")
+    print("Searching in common locations...")
+    common_paths = [
+        '/usr/local/lib/libportaudio.2.dylib',
+        '/opt/local/lib/libportaudio.2.dylib',
+        '/usr/lib/libportaudio.2.dylib'
+    ]
+    for path in common_paths:
+        if os.path.exists(path):
+            PORTAUDIO_LIB = path
+            break
+    else:
+        raise ValueError("Could not find PortAudio library in any common location")
+
+print(f"Using PortAudio library at: {PORTAUDIO_LIB}")
+
 OPTIONS = {
-    'argv_emulation': False,  # Disable argv emulation for better Mac integration
+    'argv_emulation': False,
     'iconfile': 'src/assets/AppIcon.icns',
-    'packages': [
-        'numpy', 'whisper', 'pyaudio', 'openai_whisper', 'tiktoken', 'torch',
-        'regex', 'tqdm', 'more_itertools', 'requests', 'typing_extensions'
-    ],
-    'includes': [
-        'numpy', 'whisper', 'pyaudio', 'pyautogui', 'openai_whisper',
-        'tiktoken', 'torch', 'regex', 'tqdm'
-    ],
-    'excludes': ['matplotlib', 'tkinter', 'PyQt5', 'wx', 'test', 'sphinx', 'sqlalchemy', 'pandas', 'pygame'],
-    'frameworks': [
-        'build/frameworks/libportaudio.2.dylib',  # Use our bundled copy
-        '/System/Library/Frameworks/CoreAudio.framework',
-        '/System/Library/Frameworks/AudioToolbox.framework',
-        '/System/Library/Frameworks/AVFoundation.framework',
-        '/System/Library/Frameworks/ApplicationServices.framework'
-    ],
+    'packages': ['numpy', 'whisper', 'pyaudio', 'tiktoken', 'torch'],
+    'includes': ['numpy', 'whisper', 'pyaudio._portaudio', 'pyautogui'],
+    'excludes': ['matplotlib', 'tkinter', 'PyQt5', 'wx', 'test'],
+    'binary_includes': [PORTAUDIO_LIB],  # Directly include the PortAudio library
     'resources': ['src/assets'],
     'dylib_excludes': ['libgfortran.3.dylib', 'libquadmath.0.dylib', 'libgcc_s.1.dylib'],
-    'strip': True,  # Strip debug symbols to reduce size
+    'strip': True,
     'plist': {
         'CFBundleName': 'TalkToMe',
         'CFBundleDisplayName': 'TalkToMe',
         'CFBundleGetInfoString': "Voice to text for any application",
         'CFBundleIdentifier': "com.bmaddick.talktome",
-        'CFBundleVersion': "0.1.9",
-        'CFBundleShortVersionString': "0.1.9",
-        'LSMinimumSystemVersion': '10.13.0',  # Minimum macOS version
+        'CFBundleVersion': "1.0.0",
+        'CFBundleShortVersionString': "1.0.0",
+        'LSMinimumSystemVersion': '10.13.0',
         'NSMicrophoneUsageDescription': 'TalkToMe needs microphone access to convert your speech to text.',
         'NSAppleEventsUsageDescription': 'TalkToMe needs accessibility access to type text in any application.',
-        'LSUIElement': True,  # Makes it a background application
+        'LSUIElement': True,
         'LSBackgroundOnly': False,
         'NSHighResolutionCapable': True,
         'CFBundleIconFile': 'AppIcon',
-        'CFBundleDocumentTypes': [],  # Ensures proper app bundle handling
-        'CFBundlePackageType': 'APPL',  # Explicitly mark as application
-        'NSRequiresAquaSystemAppearance': True,  # Ensure proper Mac app appearance
-        'LSApplicationCategoryType': 'public.app-category.productivity',  # Set app category
+        'CFBundleDocumentTypes': [],
+        'CFBundlePackageType': 'APPL',
+        'NSRequiresAquaSystemAppearance': True,
+        'LSApplicationCategoryType': 'public.app-category.productivity',
     }
 }
 
