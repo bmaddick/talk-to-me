@@ -57,24 +57,28 @@ jobs:
         cat > TalkToMe.spec << EOL
         # -*- mode: python ; coding: utf-8 -*-
         import os
+        import sys
         from PyInstaller.utils.hooks import collect_dynamic_libs
 
         block_cipher = None
 
         # Get Homebrew PortAudio path
-        portaudio_path = '$(brew --prefix portaudio)/lib/libportaudio.2.dylib'
-        print(f'PortAudio path: {portaudio_path}')
+        portaudio_path = '/opt/homebrew/opt/portaudio/lib/libportaudio.2.dylib'
+        print(f'Looking for PortAudio at: {portaudio_path}')
+        if not os.path.exists(portaudio_path):
+            print(f'ERROR: PortAudio library not found at {portaudio_path}')
+            sys.exit(1)
 
         a = Analysis(
             ['src/main.py'],
             pathex=[os.getcwd()],
-            binaries=[(portaudio_path, '.')] if os.path.exists(portaudio_path) else [],
+            binaries=[(portaudio_path, '.')],
             datas=[],
             hiddenimports=['pyaudio', 'numpy.core.multiarray', 'whisper'],
             hookspath=[],
             hooksconfig={},
             runtime_hooks=[],
-            excludes=['matplotlib', 'tkinter', 'wx'],
+            excludes=[],
             win_no_prefer_redirects=False,
             win_private_assemblies=False,
             cipher=block_cipher,
@@ -120,8 +124,8 @@ jobs:
         )
         EOL
 
-        # Build with PyInstaller with proper debug flags
-        pyinstaller -d imports -d bootloader TalkToMe.spec
+        # Build with PyInstaller
+        pyinstaller TalkToMe.spec --log-level DEBUG
 
         # Verify the built app structure
         echo "Built app contents:"
