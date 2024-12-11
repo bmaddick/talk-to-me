@@ -33,7 +33,7 @@ OPTIONS = {
     'resources': ['src/assets'],
     'strip': True,
     'optimize': 2,
-    'frameworks': ['lib/libportaudio.2.dylib'],
+    'frameworks': [PORTAUDIO_LIB],
     'dylib_excludes': [],
     'plist': {
         'CFBundleName': 'TalkToMe',
