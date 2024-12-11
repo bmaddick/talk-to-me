@@ -6,10 +6,10 @@ from setuptools import setup
 
 def find_portaudio():
     """Find the PortAudio library."""
-    framework_path = os.path.join('lib', 'libportaudio.2.dylib.framework', 'Versions', 'A', 'libportaudio.2.dylib')
-    if os.path.exists(framework_path):
-        print(f"Found PortAudio framework at: {framework_path}")
-        return framework_path
+    portaudio_path = os.path.join('lib', 'libportaudio.2.dylib')
+    if os.path.exists(portaudio_path):
+        print(f"Found PortAudio at: {portaudio_path}")
+        return portaudio_path
     raise ValueError("PortAudio library not found")
 
 PORTAUDIO_LIB = find_portaudio()
@@ -29,7 +29,6 @@ OPTIONS = {
     'resources': ['src/assets'],
     'strip': True,
     'optimize': 2,
-    'frameworks': ['lib/libportaudio.2.dylib.framework'],
     'dylib_excludes': ['libportaudio.2.dylib'],
     'plist': {
         'CFBundleName': 'TalkToMe',
