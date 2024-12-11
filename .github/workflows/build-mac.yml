@@ -18,33 +18,16 @@ jobs:
       with:
         python-version: '3.11'
 
-    - name: Install and Configure PortAudio
+    - name: Install PortAudio
       run: |
-        # Install PortAudio
         brew install portaudio
-
-        # Create lib directory and copy library
         mkdir -p lib
         cp $(brew --prefix portaudio)/lib/libportaudio.2.dylib lib/
-        chmod +x lib/libportaudio.2.dylib
-
-        # Fix library install name
-        install_name_tool -id "@executable_path/../Frameworks/libportaudio.2.dylib" lib/libportaudio.2.dylib
-
-        # Debug output
-        echo "Library details:"
-        otool -L lib/libportaudio.2.dylib
 
     - name: Install Dependencies
       run: |
         python -m pip install --upgrade pip setuptools wheel
-
-        # Set library paths for PyAudio installation
-        export LIBRARY_PATH="$PWD/lib:$LIBRARY_PATH"
-        export DYLD_LIBRARY_PATH="$PWD/lib:$DYLD_LIBRARY_PATH"
-
-        # Install dependencies with PEP 517
-        pip install --use-pep517 rubicon-objc py2app pyaudio
+        pip install pyinstaller pyaudio
         pip install -r requirements.txt
 
     - name: Build App
@@ -52,29 +35,79 @@ jobs:
         # Clean previous builds
         rm -rf dist build
 
-        # Set library paths for build
-        export LIBRARY_PATH="$PWD/lib:$LIBRARY_PATH"
-        export DYLD_LIBRARY_PATH="$PWD/lib:$DYLD_LIBRARY_PATH"
+        # Create spec file
+        cat > TalkToMe.spec << EOL
+        # -*- mode: python ; coding: utf-8 -*-
+        import os
+        block_cipher = None
+        a = Analysis(
+            ['src/main.py'],
+            pathex=[os.getcwd()],
+            binaries=[('lib/libportaudio.2.dylib', '.')],
+            datas=[('src/assets/AppIcon.icns', 'assets')],
+            hiddenimports=['pyaudio', 'numpy.core.multiarray', 'whisper'],
+            hookspath=[],
+            hooksconfig={},
+            runtime_hooks=[],
+            excludes=['matplotlib', 'tkinter', 'wx', 'PIL'],
+            win_no_prefer_redirects=False,
+            win_private_assemblies=False,
+            cipher=block_cipher,
+            noarchive=False,
+        )
+        pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
+        exe = EXE(
+            pyz,
+            a.scripts,
+            [],
+            exclude_binaries=True,
+            name='TalkToMe',
+            debug=False,
+            bootloader_ignore_signals=False,
+            strip=False,
+            upx=True,
+            console=False,
+            disable_windowed_traceback=False,
+            argv_emulation=False,
+            target_arch=None,
+            codesign_identity=None,
+            entitlements_file=None,
+            icon='src/assets/AppIcon.icns'
+        )
+        coll = COLLECT(
+            exe,
+            a.binaries,
+            a.zipfiles,
+            a.datas,
+            strip=False,
+            upx=True,
+            upx_exclude=[],
+            name='TalkToMe'
+        )
+        app = BUNDLE(
+            coll,
+            name='TalkToMe.app',
+            icon='src/assets/AppIcon.icns',
+            bundle_identifier='com.bmaddick.talktome',
+            info_plist={
+                'NSMicrophoneUsageDescription': 'TalkToMe needs microphone access to convert speech to text.',
+                'LSMinimumSystemVersion': '10.15.0',
+                'NSRequiresAquaSystemAppearance': False,
+            }
+        )
+        EOL
 
-        # Create app bundle structure
-        mkdir -p dist/TalkToMe.app/Contents/{Frameworks,MacOS,Resources}
+        # Build with PyInstaller
+        pyinstaller TalkToMe.spec
 
-        # Build with verbose output
-        python setup.py py2app -vv
-
-        # Copy PortAudio library to Frameworks
-        cp lib/libportaudio.2.dylib dist/TalkToMe.app/Contents/Frameworks/
-
-        # Debug output
-        echo "App bundle contents:"
-        ls -R dist/TalkToMe.app/Contents/
-        echo "Library references in binary:"
-        otool -L dist/TalkToMe.app/Contents/MacOS/TalkToMe
+        # Create DMG structure
+        mkdir -p dmg
+        cp -r "dist/TalkToMe.app" dmg/
+        ln -s /Applications dmg/
 
     - name: Create DMG
       run: |
-        chmod +x create_dmg.sh
-        ./create_dmg.sh
+        hdiutil create -volname "TalkToMe" -srcfolder dmg -ov -format UDZO TalkToMe.dmg
 
     - name: Upload Artifacts
       uses: actions/upload-artifact@v3
