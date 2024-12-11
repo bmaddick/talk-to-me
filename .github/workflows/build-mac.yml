@@ -53,16 +53,9 @@ jobs:
 
     - name: Install Python Dependencies
       run: |
-        # Install dependencies with PEP 517 support
         python -m pip install --upgrade pip setuptools wheel
         python -m pip install --use-pep517 -r requirements.txt
         python -m pip install --use-pep517 py2app
-
-        # Configure library paths
-        mkdir -p /usr/local/lib
-        ln -sf "$PORTAUDIO_LIB" /usr/local/lib/libportaudio.2.dylib
-        export DYLD_LIBRARY_PATH="/usr/local/lib:$DYLD_LIBRARY_PATH"
-        export LIBRARY_PATH="/usr/local/lib:$LIBRARY_PATH"
 
         # Verify PyAudio installation
         python -c "
@@ -81,39 +74,24 @@ jobs:
         # Clean previous builds
         rm -rf build dist
 
-        # Prepare Frameworks directory
+        # Create Frameworks directory
         mkdir -p Frameworks
         cp "$PORTAUDIO_LIB" Frameworks/
         chmod +x Frameworks/libportaudio.2.dylib
         install_name_tool -id "@rpath/libportaudio.2.dylib" Frameworks/libportaudio.2.dylib
 
-        # Build with verbose output and explicit library path
-        DYLD_LIBRARY_PATH="/usr/local/lib:$DYLD_LIBRARY_PATH" \
-        LIBRARY_PATH="/usr/local/lib:$LIBRARY_PATH" \
+        # Build with verbose output
         PYTHONPATH="$PWD" \
+        DYLD_LIBRARY_PATH="$PWD/Frameworks:$DYLD_LIBRARY_PATH" \
+        LIBRARY_PATH="$PWD/Frameworks:$LIBRARY_PATH" \
         python setup.py py2app -vv
 
-        # Copy and configure framework in app bundle
-        mkdir -p dist/TalkToMe.app/Contents/Frameworks
-        cp Frameworks/libportaudio.2.dylib dist/TalkToMe.app/Contents/Frameworks/
-        chmod +x dist/TalkToMe.app/Contents/Frameworks/libportaudio.2.dylib
-
-        # Fix PyAudio extension references
-        PYAUDIO_SO=$(find dist/TalkToMe.app -name "_portaudio.so")
-        if [ -n "$PYAUDIO_SO" ]; then
-          install_name_tool -change "$PORTAUDIO_LIB" \
-            "@rpath/libportaudio.2.dylib" "$PYAUDIO_SO"
-          install_name_tool -change "/usr/local/lib/libportaudio.2.dylib" \
-            "@rpath/libportaudio.2.dylib" "$PYAUDIO_SO"
-        fi
-
-        # Verify bundle
-        echo "Verifying library configuration:"
-        otool -L dist/TalkToMe.app/Contents/Frameworks/libportaudio.2.dylib
-        if [ -n "$PYAUDIO_SO" ]; then
-          echo "Verifying PyAudio extension:"
-          otool -L "$PYAUDIO_SO"
-        fi
+        # Verify bundle structure
+        echo "App bundle structure:"
+        find dist/TalkToMe.app -type f -name "*.dylib" -o -name "*.so" | while read -r file; do
+          echo "Checking $file:"
+          otool -L "$file"
+        done
 
     - name: Create DMG
       run: |
