@@ -35,13 +35,12 @@ jobs:
         cp "$PORTAUDIO_PREFIX/lib/libportaudio.2.dylib" build/frameworks/
         chmod +x build/frameworks/libportaudio.2.dylib
 
-        # Fix library install name
+        # Fix library install name and verify
         install_name_tool -id "@executable_path/../Frameworks/libportaudio.2.dylib" build/frameworks/libportaudio.2.dylib
+        install_name_tool -change "/opt/homebrew/opt/portaudio/lib/libportaudio.2.dylib" "@executable_path/../Frameworks/libportaudio.2.dylib" build/frameworks/libportaudio.2.dylib
 
         # Verify setup
-        ls -la build/frameworks/
         otool -L build/frameworks/libportaudio.2.dylib
-        echo "PortAudio library location: $(find /opt/homebrew -name 'libportaudio*.dylib')"
 
     - name: Install Python Dependencies
       run: |
