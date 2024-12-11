@@ -18,7 +18,7 @@ OPTIONS = {
     ],
     'excludes': ['matplotlib', 'tkinter', 'PyQt5', 'wx', 'test', 'sphinx', 'sqlalchemy', 'pandas', 'pygame'],
     'frameworks': [
-        '/opt/homebrew/opt/portaudio/lib/libportaudio.2.dylib',  # Use absolute Homebrew path
+        '@executable_path/../Frameworks/libportaudio.2.dylib',  # Use relative path for final bundle
         '/System/Library/Frameworks/CoreAudio.framework',
         '/System/Library/Frameworks/AudioToolbox.framework',
         '/System/Library/Frameworks/AVFoundation.framework',
