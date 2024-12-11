@@ -30,6 +30,13 @@ if not os.path.exists(PORTAUDIO_LIB):
 
 print(f"Using PortAudio library at: {PORTAUDIO_LIB}")
 
+def portaudio_recipe(module, required_imports):
+    """Custom recipe for PyAudio/PortAudio"""
+    return dict(
+        loader_files=[PORTAUDIO_LIB],
+        prescripts=['import os; os.environ["DYLD_LIBRARY_PATH"] = os.path.join(os.environ["RESOURCEPATH"], "..")']
+    )
+
 OPTIONS = {
     'argv_emulation': False,
     'iconfile': 'src/assets/AppIcon.icns',
@@ -42,9 +49,8 @@ OPTIONS = {
         'tiktoken', 'torch', 'regex', 'tqdm'
     ],
     'excludes': ['matplotlib', 'tkinter', 'PyQt5', 'wx', 'test', 'sphinx', 'sqlalchemy', 'pandas', 'pygame'],
-    'binary_includes': [PORTAUDIO_LIB],  # Directly include PortAudio binary
+    'recipes': {'pyaudio': portaudio_recipe},  # Use custom recipe for PyAudio
     'resources': ['src/assets'],
-    'frameworks': [],  # Remove frameworks option
     'dylib_excludes': ['libgfortran.3.dylib', 'libquadmath.0.dylib', 'libgcc_s.1.dylib'],
     'strip': True,
     'plist': {
