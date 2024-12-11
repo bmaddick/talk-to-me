@@ -23,8 +23,8 @@ def get_portaudio_path():
         subprocess.run(['cp', lib_path, local_lib_path], check=True)
         subprocess.run(['chmod', '644', local_lib_path], check=True)
 
-        # Fix library install name
-        subprocess.run(['install_name_tool', '-id', '@rpath/libportaudio.2.dylib', local_lib_path], check=True)
+        # Fix library install name with executable_path
+        subprocess.run(['install_name_tool', '-id', '@executable_path/../lib/libportaudio.2.dylib', local_lib_path], check=True)
         print(f"Configured PortAudio at: {local_lib_path}")
 
         return local_lib_path
@@ -67,7 +67,8 @@ OPTIONS = {
     'resources': ['src/assets'],
     'strip': True,
     'site_packages': True,
-    'dylib_excludes': ['libportaudio.2.dylib.framework'],
+    'frameworks': [],  # Remove framework configuration
+    'dylibs': ['lib/libportaudio.2.dylib'],  # Add direct dylib reference
     'plist': {
         'CFBundleName': 'TalkToMe',
         'CFBundleDisplayName': 'TalkToMe',
