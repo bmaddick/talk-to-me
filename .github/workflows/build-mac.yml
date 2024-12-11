@@ -43,13 +43,17 @@ jobs:
         # Clean previous builds
         rm -rf dist build
 
-        # Debug environment
+        # Debug environment and library paths
         echo "Current directory: $PWD"
+        echo "Checking PortAudio installation:"
+        brew list portaudio
+        echo "PortAudio library location:"
+        ls -la $(brew --prefix portaudio)/lib/
         echo "Library paths:"
         echo "DYLD_LIBRARY_PATH: $DYLD_LIBRARY_PATH"
         echo "LIBRARY_PATH: $LIBRARY_PATH"
 
-        # Create spec file
+        # Create spec file with explicit library handling
         cat > TalkToMe.spec << EOL
         # -*- mode: python ; coding: utf-8 -*-
         import os
@@ -57,14 +61,14 @@ jobs:
 
         block_cipher = None
 
-        # Get library paths from environment
-        lib_path = os.getenv('LIBRARY_PATH', '').split(':')[0]
-        portaudio_lib = os.path.join(lib_path, 'libportaudio.2.dylib')
+        # Get Homebrew PortAudio path
+        portaudio_path = '$(brew --prefix portaudio)/lib/libportaudio.2.dylib'
+        print(f'PortAudio path: {portaudio_path}')
 
         a = Analysis(
             ['src/main.py'],
-            pathex=[os.getcwd(), lib_path],
-            binaries=[(portaudio_lib, '.')] if os.path.exists(portaudio_lib) else [],
+            pathex=[os.getcwd()],
+            binaries=[(portaudio_path, '.')] if os.path.exists(portaudio_path) else [],
             datas=[],
             hiddenimports=['pyaudio', 'numpy.core.multiarray', 'whisper'],
             hookspath=[],
