@@ -25,26 +25,22 @@ jobs:
         PORTAUDIO_PREFIX=$(brew --prefix portaudio)
         PORTAUDIO_LIB="$PORTAUDIO_PREFIX/lib/libportaudio.2.dylib"
 
-        # Debug output
-        echo "PortAudio prefix: $PORTAUDIO_PREFIX"
-        echo "PortAudio library: $PORTAUDIO_LIB"
-        ls -l "$PORTAUDIO_LIB"
-
         # Create lib directory and copy PortAudio
         mkdir -p lib
         cp -v "$PORTAUDIO_LIB" lib/
         chmod 755 lib/libportaudio.2.dylib
 
-        # Debug library location
-        echo "Copied PortAudio library:"
-        ls -l lib/
+        # Fix library install name
+        install_name_tool -id "@executable_path/../Frameworks/libportaudio.2.dylib" lib/libportaudio.2.dylib
+
+        # Debug output
+        echo "PortAudio library details:"
         otool -L lib/libportaudio.2.dylib
 
     - name: Install Dependencies
       run: |
         python -m pip install --upgrade pip setuptools wheel
-        pip install --use-pep517 rubicon-objc
-        pip install --use-pep517 py2app
+        pip install --use-pep517 rubicon-objc py2app
 
         # Set environment variables for PyAudio installation
         export PORTAUDIO_PATH="$PWD/lib"
@@ -54,7 +50,7 @@ jobs:
         export LDFLAGS="-L$PORTAUDIO_PATH"
 
         # Install PyAudio with verbose output
-        pip install --verbose --use-pep517 pyaudio
+        DYLD_LIBRARY_PATH="$PORTAUDIO_PATH" pip install --verbose pyaudio
 
         # Install remaining dependencies
         pip install -r requirements.txt
@@ -63,42 +59,30 @@ jobs:
       run: |
         rm -rf dist build
 
-        # Debug environment
-        echo "Current directory: $PWD"
-        echo "PortAudio lib location:"
-        ls -l lib/
-        echo "Library path environment:"
-        echo $DYLD_LIBRARY_PATH
-        echo $DYLD_FALLBACK_LIBRARY_PATH
+        # Set library paths
+        export DYLD_LIBRARY_PATH="$PWD/lib:$DYLD_LIBRARY_PATH"
+        export LIBRARY_PATH="$PWD/lib:$LIBRARY_PATH"
 
         # Build with verbose output
         python setup.py py2app -vv
 
-        # Create frameworks directory in app bundle
+        # Create frameworks directory and copy library
         mkdir -p dist/TalkToMe.app/Contents/Frameworks
-
-        # Copy PortAudio library with debug output
-        echo "Copying PortAudio library..."
         cp -v lib/libportaudio.2.dylib dist/TalkToMe.app/Contents/Frameworks/
         chmod 755 dist/TalkToMe.app/Contents/Frameworks/libportaudio.2.dylib
 
-        # Fix library references in app bundle with verbose output
+        # Fix library references
         echo "Fixing library references..."
-        find dist/TalkToMe.app -name "*.so" -o -name "*.dylib" | while read lib; do
+        find dist/TalkToMe.app -type f -name "*.so" -o -name "*.dylib" | while read lib; do
           echo "Processing $lib"
           otool -L "$lib"
-          chmod +w "$lib"
-          install_name_tool -change "/usr/local/opt/portaudio/lib/libportaudio.2.dylib" \
-            "@executable_path/../Frameworks/libportaudio.2.dylib" "$lib" || true
           install_name_tool -change "lib/libportaudio.2.dylib" \
             "@executable_path/../Frameworks/libportaudio.2.dylib" "$lib" || true
-          echo "Finished processing $lib"
+          install_name_tool -change "$PWD/lib/libportaudio.2.dylib" \
+            "@executable_path/../Frameworks/libportaudio.2.dylib" "$lib" || true
+          echo "After processing:"
+          otool -L "$lib"
         done
-
-        # Verify final library setup
-        echo "Final library verification:"
-        ls -lR dist/TalkToMe.app/Contents/Frameworks/
-        otool -L dist/TalkToMe.app/Contents/Frameworks/libportaudio.2.dylib
 
     - name: Create DMG
       run: |
