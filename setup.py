@@ -4,10 +4,9 @@ from setuptools import setup
 
 sys.setrecursionlimit(5000)
 
-# Ensure framework directory exists and get its path
-framework_dir = os.path.join(os.getcwd(), 'build', 'frameworks')
-framework_path = os.path.join(framework_dir, 'libportaudio.2.dylib.framework')
-os.makedirs(framework_dir, exist_ok=True)
+# Get path to PortAudio library
+portaudio_lib = os.path.join(os.getcwd(), 'build', 'frameworks', 'libportaudio.2.dylib')
+os.makedirs(os.path.dirname(portaudio_lib), exist_ok=True)
 
 APP = ['src/main.py']
 DATA_FILES = [
@@ -22,11 +21,9 @@ OPTIONS = {
     'excludes': ['matplotlib', 'tkinter', 'PyQt5', 'wx', 'test'],
     'resources': ['src/assets'],
     'strip': True,
-    'recipe_plugins': ['src.recipes'],
-    'frameworks': [framework_path],
+    'frameworks': [portaudio_lib],
     'dylib_excludes': ['libportaudio.2.dylib'],
     'site_packages': True,
-    'python_path': sys.path,
     'plist': {
         'CFBundleName': 'TalkToMe',
         'CFBundleDisplayName': 'TalkToMe',
