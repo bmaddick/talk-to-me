@@ -116,8 +116,12 @@ jobs:
         )
         EOL
 
-        # Build with PyInstaller with debug output
-        pyinstaller --debug TalkToMe.spec
+        # Build with PyInstaller with proper debug flags
+        pyinstaller -d all TalkToMe.spec
+
+        # Verify the built app structure
+        echo "Built app contents:"
+        ls -la dist/TalkToMe.app/Contents/MacOS/
 
         # Create DMG structure
         mkdir -p dmg
