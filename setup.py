@@ -10,41 +10,40 @@ DATA_FILES = [
     ('assets', ['src/assets/AppIcon.icns', 'src/assets/background.png'])
 ]
 
-def find_portaudio():
-    """Find PortAudio library with detailed logging."""
-    # Try Homebrew first
+def get_portaudio_lib():
+    """Get PortAudio library path with fallbacks."""
     try:
-        portaudio_path = subprocess.check_output(['brew', '--prefix', 'portaudio']).decode().strip()
-        lib_path = os.path.join(portaudio_path, 'lib', 'libportaudio.2.dylib')
-        if os.path.exists(lib_path):
-            print(f"Found PortAudio via Homebrew at: {lib_path}")
-            return lib_path
-    except Exception as e:
-        print(f"Homebrew detection failed: {e}")
+        # Try to get from environment first
+        if 'PORTAUDIO_LIB' in os.environ:
+            lib_path = os.environ['PORTAUDIO_LIB']
+            if os.path.exists(lib_path):
+                return lib_path
 
-    # Search common locations
+        # Try Homebrew
+        brew_prefix = subprocess.check_output(['brew', '--prefix', 'portaudio']).decode().strip()
+        lib_path = os.path.join(brew_prefix, 'lib', 'libportaudio.2.dylib')
+        if os.path.exists(lib_path):
+            return lib_path
+    except:
+        pass
+
+    # Check common locations
     common_paths = [
         '/usr/local/lib/libportaudio.2.dylib',
-        '/opt/local/lib/libportaudio.2.dylib',
-        '/usr/lib/libportaudio.2.dylib',
-        '/opt/homebrew/lib/libportaudio.2.dylib'
+        '/opt/homebrew/lib/libportaudio.2.dylib',
+        '/usr/lib/libportaudio.2.dylib'
     ]
-
     for path in common_paths:
         if os.path.exists(path):
-            print(f"Found PortAudio at: {path}")
             return path
-        else:
-            print(f"Checked path (not found): {path}")
 
-    raise ValueError("Could not find PortAudio library in any standard location")
+    return None
 
-try:
-    PORTAUDIO_LIB = find_portaudio()
-    print(f"Using PortAudio library at: {PORTAUDIO_LIB}")
-except Exception as e:
-    print(f"Error finding PortAudio: {e}")
-    sys.exit(1)
+PORTAUDIO_LIB = get_portaudio_lib()
+if not PORTAUDIO_LIB:
+    print("Warning: PortAudio library not found. Build may fail.")
+else:
+    print(f"Found PortAudio library at: {PORTAUDIO_LIB}")
 
 OPTIONS = {
     'argv_emulation': False,
@@ -53,8 +52,7 @@ OPTIONS = {
     'includes': ['numpy', 'whisper', 'pyautogui'],
     'excludes': ['matplotlib', 'tkinter', 'PyQt5', 'wx', 'test'],
     'resources': ['src/assets'],
-    'frameworks': [PORTAUDIO_LIB],
-    'binary_includes': [PORTAUDIO_LIB],  # Add binary_includes for extra safety
+    'frameworks': [PORTAUDIO_LIB] if PORTAUDIO_LIB else [],
     'strip': True,
     'plist': {
         'CFBundleName': 'TalkToMe',

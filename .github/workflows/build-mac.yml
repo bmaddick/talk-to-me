@@ -20,27 +20,18 @@ jobs:
 
     - name: Install System Dependencies
       run: |
-        # Install PortAudio and get its path
+        # Install PortAudio and verify installation
         brew install portaudio
         PORTAUDIO_PATH=$(brew --prefix portaudio)
         PORTAUDIO_LIB="$PORTAUDIO_PATH/lib/libportaudio.2.dylib"
 
-        # Verify PortAudio installation
         if [ ! -f "$PORTAUDIO_LIB" ]; then
-          echo "Error: PortAudio library not found at $PORTAUDIO_LIB"
+          echo "Error: PortAudio library not found at expected location"
           exit 1
         fi
 
-        # Create frameworks directory
-        mkdir -p dist/TalkToMe.app/Contents/Frameworks
-
-        # Copy and configure PortAudio library
-        cp "$PORTAUDIO_LIB" dist/TalkToMe.app/Contents/Frameworks/
-        chmod +x dist/TalkToMe.app/Contents/Frameworks/libportaudio.2.dylib
-        install_name_tool -id "@rpath/libportaudio.2.dylib" dist/TalkToMe.app/Contents/Frameworks/libportaudio.2.dylib
-
-        # Verify library setup
-        otool -L dist/TalkToMe.app/Contents/Frameworks/libportaudio.2.dylib
+        echo "PORTAUDIO_LIB=$PORTAUDIO_LIB" >> $GITHUB_ENV
+        otool -L "$PORTAUDIO_LIB"
 
     - name: Create App Assets
       run: |
@@ -66,39 +57,45 @@ jobs:
         python -m pip install --use-pep517 -r requirements.txt
         python -m pip install --use-pep517 py2app
 
-        # Set library paths
-        export DYLD_LIBRARY_PATH="$PWD/dist/TalkToMe.app/Contents/Frameworks:$DYLD_LIBRARY_PATH"
-        export LIBRARY_PATH="$PWD/dist/TalkToMe.app/Contents/Frameworks:$LIBRARY_PATH"
-
         # Verify PyAudio installation
         python -c "
-        import pyaudio, os
-        print('PyAudio:', pyaudio.__file__)
-        print('PortAudio lib exists:', os.path.exists('dist/TalkToMe.app/Contents/Frameworks/libportaudio.2.dylib'))
+        import pyaudio
+        print('PyAudio version:', pyaudio.__version__)
+        print('PyAudio file:', pyaudio.__file__)
         "
 
     - name: Build App
+      env:
+        PORTAUDIO_LIB: ${{ env.PORTAUDIO_LIB }}
       run: |
         # Clean previous builds
-        rm -rf dist build
-
-        # Set environment variables
-        export DYLD_LIBRARY_PATH="$PWD/dist/TalkToMe.app/Contents/Frameworks:$DYLD_LIBRARY_PATH"
-        export LIBRARY_PATH="$PWD/dist/TalkToMe.app/Contents/Frameworks:$LIBRARY_PATH"
+        rm -rf build dist
 
         # Build with verbose output
         PYTHONPATH="$PWD" python setup.py py2app -vv
 
-        # Fix PyAudio extension references
+        # Create Frameworks directory
+        mkdir -p dist/TalkToMe.app/Contents/Frameworks
+
+        # Copy and configure PortAudio
+        cp "$PORTAUDIO_LIB" dist/TalkToMe.app/Contents/Frameworks/
+        chmod +x dist/TalkToMe.app/Contents/Frameworks/libportaudio.2.dylib
+
+        # Fix library references
+        install_name_tool -id "@rpath/libportaudio.2.dylib" \
+          dist/TalkToMe.app/Contents/Frameworks/libportaudio.2.dylib
+
         PYAUDIO_SO=$(find dist/TalkToMe.app -name "_portaudio.so")
         if [ -n "$PYAUDIO_SO" ]; then
           install_name_tool -change "$PORTAUDIO_LIB" \
             "@rpath/libportaudio.2.dylib" "$PYAUDIO_SO"
         fi
 
-        # Verify app bundle
-        echo "App bundle contents:"
+        # Verify bundle
+        echo "Verifying app bundle structure:"
         ls -R dist/TalkToMe.app/Contents/
+        echo "Checking library dependencies:"
+        otool -L dist/TalkToMe.app/Contents/Frameworks/libportaudio.2.dylib
 
     - name: Create DMG
       run: |
