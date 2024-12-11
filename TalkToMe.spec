@@ -10,7 +10,24 @@ a = Analysis(
         ('src/assets/AppIcon.png', 'assets'),
         ('src/assets/AppIcon.png', '.')  # Also copy to root for rumps
     ],
-    hiddenimports=['pyaudio', 'whisper', 'pynput', 'rumps', 'PIL', 'PIL._tkinter', 'PIL._imaging'],
+    hiddenimports=[
+        'pyaudio',
+        'whisper',
+        'pynput.keyboard',
+        'pynput.mouse',
+        'rumps',
+        'PIL',
+        'PIL.Image',
+        'PIL._tkinter',
+        'PIL._imaging',
+        'tkinter',
+        'pkg_resources.py2_warn',
+        'pkg_resources.markers',
+        'pkg_resources._vendor.packaging.version',
+        'pkg_resources._vendor.packaging.requirements',
+        'pkg_resources._vendor.packaging.markers',
+        'pkg_resources._vendor.packaging.specifiers'
+    ],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
@@ -19,6 +36,7 @@ a = Analysis(
     win_private_assemblies=False,
     cipher=block_cipher,
     noarchive=False,
+    collect_submodules=['pynput', 'PIL']  # Ensure all submodules are collected
 )
 
 pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
@@ -67,5 +85,7 @@ app = BUNDLE(
         'NSHighResolutionCapable': True,
         'NSRequiresAquaSystemAppearance': False,
         'NSSupportsAutomaticGraphicsSwitching': True,
+        'CFBundleDisplayName': 'TalkToMe',  # Ensure proper display name
+        'CFBundleName': 'TalkToMe',  # Ensure proper bundle name
     }
 )
