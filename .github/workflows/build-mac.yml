@@ -28,28 +28,26 @@ jobs:
       run: |
         brew install portaudio
         PORTAUDIO_PREFIX=$(brew --prefix portaudio)
-        PORTAUDIO_LIB="$PORTAUDIO_PREFIX/lib/libportaudio.2.dylib"
-        mkdir -p lib
-        cp "$PORTAUDIO_LIB" lib/
-        chmod 755 lib/libportaudio.2.dylib
-        echo "DYLD_LIBRARY_PATH=$PWD/lib:$DYLD_LIBRARY_PATH" >> $GITHUB_ENV
-        echo "LIBRARY_PATH=$PWD/lib:$LIBRARY_PATH" >> $GITHUB_ENV
-        otool -L lib/libportaudio.2.dylib
+        echo "DYLD_LIBRARY_PATH=$PORTAUDIO_PREFIX/lib" >> $GITHUB_ENV
+        echo "LIBRARY_PATH=$PORTAUDIO_PREFIX/lib" >> $GITHUB_ENV
+        echo "CFLAGS=-I$PORTAUDIO_PREFIX/include" >> $GITHUB_ENV
+        echo "LDFLAGS=-L$PORTAUDIO_PREFIX/lib" >> $GITHUB_ENV
 
     - name: Build App
       run: |
         rm -rf dist build
         python setup.py py2app -vv
         mkdir -p dist/TalkToMe.app/Contents/Frameworks
-        cp lib/libportaudio.2.dylib dist/TalkToMe.app/Contents/Frameworks/
+        cp $(brew --prefix portaudio)/lib/libportaudio.2.dylib dist/TalkToMe.app/Contents/Frameworks/
         PYAUDIO_SO=$(find dist/TalkToMe.app -name "_portaudio.so")
         if [ -n "$PYAUDIO_SO" ]; then
-          install_name_tool -change "@loader_path/libportaudio.2.dylib" "@rpath/libportaudio.2.dylib" "$PYAUDIO_SO"
-          install_name_tool -change "/usr/local/lib/libportaudio.2.dylib" "@rpath/libportaudio.2.dylib" "$PYAUDIO_SO"
-          install_name_tool -change "lib/libportaudio.2.dylib" "@rpath/libportaudio.2.dylib" "$PYAUDIO_SO"
-          install_name_tool -id "@rpath/libportaudio.2.dylib" dist/TalkToMe.app/Contents/Frameworks/libportaudio.2.dylib
+          install_name_tool -change "$(brew --prefix portaudio)/lib/libportaudio.2.dylib" \
+            "@rpath/libportaudio.2.dylib" "$PYAUDIO_SO"
+          install_name_tool -id "@rpath/libportaudio.2.dylib" \
+            dist/TalkToMe.app/Contents/Frameworks/libportaudio.2.dylib
         fi
-        install_name_tool -add_rpath "@executable_path/../Frameworks" dist/TalkToMe.app/Contents/MacOS/TalkToMe
+        install_name_tool -add_rpath "@executable_path/../Frameworks" \
+          dist/TalkToMe.app/Contents/MacOS/TalkToMe
 
     - name: Create DMG
       run: |
