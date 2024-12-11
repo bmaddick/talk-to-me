@@ -2,7 +2,6 @@
 Setup script for building the TalkToMe application.
 """
 import os
-import sys
 from setuptools import setup
 
 APP = ['src/main.py']
@@ -10,36 +9,34 @@ DATA_FILES = [
     ('assets', ['src/assets/AppIcon.icns']),
 ]
 
-# Framework configuration
-PORTAUDIO_FRAMEWORK = 'PortAudio.framework'
-
-# Minimal package configuration to avoid recursion
+# Simplified package configuration
 OPTIONS = {
     'argv_emulation': False,
     'iconfile': 'src/assets/AppIcon.icns',
+    'packages': ['rubicon'],  # Minimal required packages
     'includes': [
-        'numpy.core.multiarray',  # Explicit numpy import
-        'torch.nn',  # Minimal torch import
-        'whisper',
-        'rubicon.objc',
-        'pyaudio'
+        'pyaudio',
+        'numpy.core.multiarray',
+        'whisper'
     ],
-    'excludes': ['matplotlib', 'tkinter', 'PyQt5', 'wx', 'test'],
-    'strip': True,
-    'optimize': 2,
-    'frameworks': [PORTAUDIO_FRAMEWORK] if os.path.exists(PORTAUDIO_FRAMEWORK) else [],
+    'excludes': ['matplotlib', 'tkinter', 'wx'],
+    'frameworks': [],  # Will be populated if PortAudio is found
     'plist': {
         'CFBundleName': 'TalkToMe',
         'CFBundleDisplayName': 'TalkToMe',
         'CFBundleIdentifier': 'com.bmaddick.talktome',
         'CFBundleVersion': '1.0.0',
         'CFBundleShortVersionString': '1.0.0',
-        'LSMinimumSystemVersion': '10.12.0',
+        'LSMinimumSystemVersion': '10.15.0',
         'NSMicrophoneUsageDescription': 'TalkToMe needs microphone access to convert speech to text.',
-        'NSAppleEventsUsageDescription': 'TalkToMe needs to control other applications to input text.',
-        'LSUIElement': True,
+        'NSRequiresAquaSystemAppearance': False,
     }
 }
+
+# Add PortAudio framework if available
+portaudio_path = os.path.join(os.getcwd(), 'PortAudio.framework')
+if os.path.exists(portaudio_path):
+    OPTIONS['frameworks'].append(portaudio_path)
 
 setup(
     name='TalkToMe',
