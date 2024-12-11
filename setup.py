@@ -12,25 +12,19 @@ DATA_FILES = [
 
 def get_portaudio_path():
     """Get PortAudio library path."""
-    # Check environment variable first
     if 'PORTAUDIO_LIB' in os.environ:
-        return os.environ['PORTAUDIO_LIB']
+        lib_path = os.environ['PORTAUDIO_LIB']
+        if os.path.exists(lib_path):
+            return lib_path
 
-    # Try Homebrew
     try:
         brew_prefix = subprocess.check_output(['brew', '--prefix', 'portaudio']).decode().strip()
-        return os.path.join(brew_prefix, 'lib', 'libportaudio.2.dylib')
+        lib_path = os.path.join(brew_prefix, 'lib', 'libportaudio.2.dylib')
+        if os.path.exists(lib_path):
+            return lib_path
     except:
         pass
 
-    # Check common locations
-    common_paths = [
-        '/usr/local/lib/libportaudio.2.dylib',
-        '/opt/homebrew/lib/libportaudio.2.dylib',
-    ]
-    for path in common_paths:
-        if os.path.exists(path):
-            return path
     return None
 
 portaudio_path = get_portaudio_path()

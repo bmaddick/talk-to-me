@@ -26,28 +26,12 @@ jobs:
         PORTAUDIO_LIB="$PORTAUDIO_PATH/lib/libportaudio.2.dylib"
         echo "PORTAUDIO_LIB=$PORTAUDIO_LIB" >> $GITHUB_ENV
 
-        # Create framework structure
-        FRAMEWORK_DIR="Frameworks"
-        FRAMEWORK_NAME="libportaudio.2.dylib.framework"
-        FRAMEWORK_PATH="$FRAMEWORK_DIR/$FRAMEWORK_NAME"
-
-        mkdir -p "$FRAMEWORK_PATH/Versions/A"
-        cp "$PORTAUDIO_LIB" "$FRAMEWORK_PATH/Versions/A/libportaudio.2.dylib"
-        chmod +x "$FRAMEWORK_PATH/Versions/A/libportaudio.2.dylib"
-
-        # Create symbolic links
-        cd "$FRAMEWORK_PATH"
-        ln -sf Versions/A/libportaudio.2.dylib libportaudio.2.dylib
-        cd Versions
-        ln -sf A Current
-        cd ../../../
-
-        # Fix install names
-        install_name_tool -id "@rpath/$FRAMEWORK_NAME/libportaudio.2.dylib" \
-          "$FRAMEWORK_PATH/Versions/A/libportaudio.2.dylib"
-
-        echo "Framework created at: $FRAMEWORK_PATH"
-        otool -L "$FRAMEWORK_PATH/libportaudio.2.dylib"
+        # Verify PortAudio installation
+        if [ ! -f "$PORTAUDIO_LIB" ]; then
+          echo "Error: PortAudio library not found"
+          exit 1
+        fi
+        otool -L "$PORTAUDIO_LIB"
 
     - name: Create App Assets
       run: |
@@ -73,18 +57,24 @@ jobs:
         python -m pip install --use-pep517 -r requirements.txt
         python -m pip install --use-pep517 py2app
 
+        # Create lib directory and copy PortAudio
+        sudo mkdir -p /usr/local/lib
+        sudo cp "$PORTAUDIO_LIB" /usr/local/lib/
+        sudo chmod 755 /usr/local/lib/libportaudio.2.dylib
+
         # Verify PyAudio installation
         python -c "
         import pyaudio
         print('PyAudio version:', pyaudio.__version__)
         print('PyAudio file:', pyaudio.__file__)
+        pa = pyaudio.PyAudio()
+        print('PortAudio initialized successfully')
+        pa.terminate()
         "
 
     - name: Build App
       env:
         PORTAUDIO_LIB: ${{ env.PORTAUDIO_LIB }}
-        DYLD_FRAMEWORK_PATH: ${{ github.workspace }}/Frameworks
-        DYLD_LIBRARY_PATH: ${{ github.workspace }}/Frameworks
       run: |
         # Clean previous builds
         rm -rf build dist
@@ -92,26 +82,35 @@ jobs:
         # Build with verbose output
         PYTHONPATH="$PWD" python setup.py py2app -vv
 
-        # Copy framework into app bundle
+        # Copy PortAudio into app bundle
         mkdir -p dist/TalkToMe.app/Contents/Frameworks
-        cp -R Frameworks/libportaudio.2.dylib.framework \
-          dist/TalkToMe.app/Contents/Frameworks/
+        cp "$PORTAUDIO_LIB" dist/TalkToMe.app/Contents/Frameworks/
+        chmod +x dist/TalkToMe.app/Contents/Frameworks/libportaudio.2.dylib
+
+        # Fix library references
+        install_name_tool -id "@rpath/libportaudio.2.dylib" \
+          dist/TalkToMe.app/Contents/Frameworks/libportaudio.2.dylib
 
         # Fix PyAudio extension references
         PYAUDIO_SO=$(find dist/TalkToMe.app -name "_portaudio.so")
         if [ -n "$PYAUDIO_SO" ]; then
           install_name_tool -change "$PORTAUDIO_LIB" \
-            "@rpath/libportaudio.2.dylib.framework/libportaudio.2.dylib" "$PYAUDIO_SO"
+            "@rpath/libportaudio.2.dylib" "$PYAUDIO_SO"
           install_name_tool -change "/usr/local/lib/libportaudio.2.dylib" \
-            "@rpath/libportaudio.2.dylib.framework/libportaudio.2.dylib" "$PYAUDIO_SO"
+            "@rpath/libportaudio.2.dylib" "$PYAUDIO_SO"
         fi
 
+        # Add rpath to executable
+        MACOS_BIN="dist/TalkToMe.app/Contents/MacOS/TalkToMe"
+        install_name_tool -add_rpath "@executable_path/../Frameworks" "$MACOS_BIN"
+
         # Verify bundle
-        echo "Verifying framework configuration:"
-        find dist/TalkToMe.app -type f -name "*.dylib" -o -name "*.so" | while read -r file; do
-          echo "Checking $file:"
-          otool -L "$file"
-        done
+        echo "Verifying library configuration:"
+        otool -L dist/TalkToMe.app/Contents/Frameworks/libportaudio.2.dylib
+        if [ -n "$PYAUDIO_SO" ]; then
+          echo "Verifying PyAudio extension:"
+          otool -L "$PYAUDIO_SO"
+        fi
 
     - name: Create DMG
       run: |
