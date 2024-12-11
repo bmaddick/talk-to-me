@@ -23,11 +23,13 @@ jobs:
         brew install portaudio
         mkdir -p lib
         cp $(brew --prefix portaudio)/lib/libportaudio.2.dylib lib/
+        # Fix library install name
+        install_name_tool -id "@rpath/libportaudio.2.dylib" lib/libportaudio.2.dylib
 
     - name: Install Dependencies
       run: |
         python -m pip install --upgrade pip setuptools wheel
-        pip install pyinstaller pyaudio pillow
+        pip install pyinstaller pyaudio
         pip install -r requirements.txt
 
     - name: Build App
@@ -44,7 +46,7 @@ jobs:
             ['src/main.py'],
             pathex=[os.getcwd()],
             binaries=[('lib/libportaudio.2.dylib', '.')],
-            datas=[('src/assets/AppIcon.icns', 'assets')],
+            datas=[],
             hiddenimports=['pyaudio', 'numpy.core.multiarray', 'whisper'],
             hookspath=[],
             hooksconfig={},
@@ -72,7 +74,6 @@ jobs:
             target_arch=None,
             codesign_identity=None,
             entitlements_file=None,
-            icon='src/assets/AppIcon.icns'
         )
         coll = COLLECT(
             exe,
@@ -87,7 +88,6 @@ jobs:
         app = BUNDLE(
             coll,
             name='TalkToMe.app',
-            icon='src/assets/AppIcon.icns',
             bundle_identifier='com.bmaddick.talktome',
             info_plist={
                 'NSMicrophoneUsageDescription': 'TalkToMe needs microphone access to convert speech to text.',
