@@ -58,25 +58,34 @@ jobs:
       run: |
         rm -rf dist build
 
-        # Show library info for debugging
-        otool -L "$PORTAUDIO_LIB"
-        otool -L lib/libportaudio.2.dylib
+        # Debug environment
+        echo "Current directory: $PWD"
+        echo "PortAudio lib location:"
+        ls -l lib/
+        echo "Library path environment:"
+        echo $DYLD_LIBRARY_PATH
 
-        # Build with verbose output
-        python setup.py py2app -vv
+        # Show library info for debugging
+        otool -L "$PORTAUDIO_LIB" || true
+        otool -L lib/libportaudio.2.dylib || true
+
+        # Build with verbose output and debug info
+        DYLD_PRINT_LIBRARIES=1 DYLD_PRINT_LIBRARIES_POST_LAUNCH=1 python setup.py py2app -vv
 
         # Fix library references in app bundle
-        PYAUDIO_SO=$(find dist/TalkToMe.app -name "_portaudio.so")
-        if [ -n "$PYAUDIO_SO" ]; then
-          chmod +w "$PYAUDIO_SO"
+        find dist/TalkToMe.app -name "*.so" -o -name "*.dylib" | while read lib; do
+          echo "Checking $lib"
+          otool -L "$lib"
+          chmod +w "$lib"
           install_name_tool -change "@rpath/libportaudio.2.dylib" \
-            "@executable_path/../lib/libportaudio.2.dylib" "$PYAUDIO_SO"
-          install_name_tool -add_rpath "@executable_path/../lib" "$PYAUDIO_SO"
-        fi
+            "@executable_path/../lib/libportaudio.2.dylib" "$lib" || true
+          install_name_tool -add_rpath "@executable_path/../lib" "$lib" || true
+        done
 
-        # Copy PortAudio library to app bundle
+        # Copy PortAudio library to app bundle and verify
         mkdir -p dist/TalkToMe.app/Contents/lib
         cp lib/libportaudio.2.dylib dist/TalkToMe.app/Contents/lib/
+        ls -l dist/TalkToMe.app/Contents/lib/
 
     - name: Create DMG
       run: |
