@@ -79,36 +79,48 @@ jobs:
         # Clean previous builds
         rm -rf build dist
 
+        # Create framework structure
+        FRAMEWORK_DIR="build/frameworks/libportaudio.2.dylib.framework"
+        mkdir -p "$FRAMEWORK_DIR/Versions/A"
+        cp "$PORTAUDIO_LIB" "$FRAMEWORK_DIR/Versions/A/libportaudio.2.dylib"
+        chmod +x "$FRAMEWORK_DIR/Versions/A/libportaudio.2.dylib"
+
+        # Create framework symlinks
+        cd "$FRAMEWORK_DIR/Versions" && ln -s A Current
+        cd "$FRAMEWORK_DIR" && ln -s Versions/Current/libportaudio.2.dylib libportaudio.2.dylib
+        cd ../../..
+
+        # Update library install name
+        install_name_tool -id "@executable_path/../Frameworks/libportaudio.2.dylib.framework/Versions/A/libportaudio.2.dylib" \
+          "$FRAMEWORK_DIR/Versions/A/libportaudio.2.dylib"
+
         # Build with verbose output
         PYTHONPATH="$PWD" python setup.py py2app -vv
 
-        # Copy PortAudio into app bundle
-        mkdir -p dist/TalkToMe.app/Contents/Frameworks
-        cp "$PORTAUDIO_LIB" dist/TalkToMe.app/Contents/Frameworks/
-        chmod +x dist/TalkToMe.app/Contents/Frameworks/libportaudio.2.dylib
+        # Verify framework structure
+        echo "Framework structure:"
+        ls -R build/frameworks/libportaudio.2.dylib.framework/
 
-        # Fix library references
-        install_name_tool -id "@rpath/libportaudio.2.dylib" \
-          dist/TalkToMe.app/Contents/Frameworks/libportaudio.2.dylib
+        # Verify library configuration
+        echo "Library configuration:"
+        otool -L "$FRAMEWORK_DIR/Versions/A/libportaudio.2.dylib"
 
         # Fix PyAudio extension references
         PYAUDIO_SO=$(find dist/TalkToMe.app -name "_portaudio.so")
         if [ -n "$PYAUDIO_SO" ]; then
           install_name_tool -change "$PORTAUDIO_LIB" \
-            "@rpath/libportaudio.2.dylib" "$PYAUDIO_SO"
+            "@rpath/libportaudio.2.dylib.framework/Versions/A/libportaudio.2.dylib" "$PYAUDIO_SO"
           install_name_tool -change "/usr/local/lib/libportaudio.2.dylib" \
-            "@rpath/libportaudio.2.dylib" "$PYAUDIO_SO"
+            "@rpath/libportaudio.2.dylib.framework/Versions/A/libportaudio.2.dylib" "$PYAUDIO_SO"
         fi
 
         # Add rpath to executable
         MACOS_BIN="dist/TalkToMe.app/Contents/MacOS/TalkToMe"
         install_name_tool -add_rpath "@executable_path/../Frameworks" "$MACOS_BIN"
 
-        # Verify bundle
-        echo "Verifying library configuration:"
-        otool -L dist/TalkToMe.app/Contents/Frameworks/libportaudio.2.dylib
+        # Verify final configuration
         if [ -n "$PYAUDIO_SO" ]; then
-          echo "Verifying PyAudio extension:"
+          echo "PyAudio extension configuration:"
           otool -L "$PYAUDIO_SO"
         fi
 
