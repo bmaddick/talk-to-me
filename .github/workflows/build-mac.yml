@@ -20,20 +20,31 @@ jobs:
 
     - name: Install System Dependencies
       run: |
-        # Install dependencies
         brew install create-dmg
         brew install portaudio
 
-        # Set up environment variables
-        PORTAUDIO_PREFIX=$(brew --prefix portaudio)
-        echo "PORTAUDIO_PATH=$PORTAUDIO_PREFIX" >> $GITHUB_ENV
-        echo "DYLD_LIBRARY_PATH=$PORTAUDIO_PREFIX/lib:$DYLD_LIBRARY_PATH" >> $GITHUB_ENV
-        echo "LIBRARY_PATH=$PORTAUDIO_PREFIX/lib:$LIBRARY_PATH" >> $GITHUB_ENV
-        echo "PKG_CONFIG_PATH=$PORTAUDIO_PREFIX/lib/pkgconfig:$PKG_CONFIG_PATH" >> $GITHUB_ENV
+    - name: Set up PortAudio
+      run: |
+        # Create frameworks directory
+        mkdir -p build/frameworks
 
-        # Bundle PortAudio library
-        chmod +x bundle_portaudio.sh
-        ./bundle_portaudio.sh
+        # Copy PortAudio library
+        cp "$(brew --prefix portaudio)/lib/libportaudio.2.dylib" build/frameworks/
+        chmod +x build/frameworks/libportaudio.2.dylib
+
+        # Fix library install name
+        install_name_tool -id "@executable_path/../Frameworks/libportaudio.2.dylib" build/frameworks/libportaudio.2.dylib
+
+    - name: Create App Assets
+      run: |
+        # Create assets directory
+        mkdir -p src/assets
+
+        # Create white background
+        echo "iVBORw0KGgoAAAANSUhEUgAAAyAAAAGQAQAAAACle3N1AAAACXBIWXMAAA7DAAAOwwHHb6hkAAAAGXRFWHRTb2Z0d2FyZQB3d3cuaW5rc2NhcGUub3Jnm+48GgAAABJ0RVh0VGl0bGUAV2hpdGUgU3F1YXJlALjNkJYAAAATdEVYdEF1dGhvcgBEZXZpbiBBc3Npc3QC5YbmAAAAIXRFWHRDcmVhdGlvbiBUaW1lADIwMjQtMDEtMTFUMDA6NTk6MzlaJHJnAAAAHHRFWHRTb3VyY2UAaHR0cHM6Ly9pbmtzY2FwZS5vcmeb7jwaAAAAXUlEQVR42u3BMQEAAADCoPVPbQwfoAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAOD1ACffAAF99yA0AAAAAElFTkSuQmCC" | base64 -d > src/assets/background.png
+
+        # Use system app icon
+        cp /System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/GenericApplicationIcon.icns src/assets/AppIcon.icns
 
     - name: Install Python Dependencies
       run: |
@@ -41,23 +52,12 @@ jobs:
         python -m pip install --use-pep517 -r requirements.txt
         python -m pip install --use-pep517 py2app
 
-    - name: Create App Assets
-      run: |
-        # Clean up any existing directories
-        rm -rf src/assets
-        mkdir -p src/assets
-
-        # Create a simple white background PNG using base64
-        echo "iVBORw0KGgoAAAANSUhEUgAAAyAAAAGQAQAAAACle3N1AAAACXBIWXMAAA7DAAAOwwHHb6hkAAAAGXRFWHRTb2Z0d2FyZQB3d3cuaW5rc2NhcGUub3Jnm+48GgAAABJ0RVh0VGl0bGUAV2hpdGUgU3F1YXJlALjNkJYAAAATdEVYdEF1dGhvcgBEZXZpbiBBc3Npc3QC5YbmAAAAIXRFWHRDcmVhdGlvbiBUaW1lADIwMjQtMDEtMTFUMDA6NTk6MzlaJHJnAAAAHHRFWHRTb3VyY2UAaHR0cHM6Ly9pbmtzY2FwZS5vcmeb7jwaAAAAXUlEQVR42u3BMQEAAADCoPVPbQwfoAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAOD1ACffAAF99yA0AAAAAElFTkSuQmCC" | base64 -d > src/assets/background.png
-
-        # Use system app icon
-        cp /System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/GenericApplicationIcon.icns src/assets/AppIcon.icns
-
     - name: Build App
       run: |
-        # Debug: Show PortAudio location
-        ls -l build/frameworks/libportaudio.2.dylib
-        otool -L build/frameworks/libportaudio.2.dylib
+        # Set environment variables
+        export DYLD_LIBRARY_PATH="$(brew --prefix portaudio)/lib:$DYLD_LIBRARY_PATH"
+        export LIBRARY_PATH="$(brew --prefix portaudio)/lib:$LIBRARY_PATH"
+        export PKG_CONFIG_PATH="$(brew --prefix portaudio)/lib/pkgconfig:$PKG_CONFIG_PATH"
 
         # Build the app
         python setup.py py2app
