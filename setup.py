@@ -11,41 +11,26 @@ DATA_FILES = [
 ]
 
 def get_portaudio_path():
-    """Get PortAudio library path with comprehensive fallback strategy."""
-    # Try environment variable first
+    """Get PortAudio library path."""
+    # Check environment variable first
     if 'PORTAUDIO_LIB' in os.environ:
-        lib_path = os.environ['PORTAUDIO_LIB']
-        if os.path.exists(lib_path):
-            print(f"Found PortAudio from environment: {lib_path}")
-            return lib_path
+        return os.environ['PORTAUDIO_LIB']
 
-    # Try Homebrew with explicit error handling
+    # Try Homebrew
     try:
         brew_prefix = subprocess.check_output(['brew', '--prefix', 'portaudio']).decode().strip()
-        lib_path = os.path.join(brew_prefix, 'lib', 'libportaudio.2.dylib')
-        if os.path.exists(lib_path):
-            print(f"Found PortAudio from Homebrew: {lib_path}")
-            return lib_path
-    except subprocess.CalledProcessError as e:
-        print(f"Homebrew check failed: {e}")
-    except Exception as e:
-        print(f"Error checking Homebrew: {e}")
+        return os.path.join(brew_prefix, 'lib', 'libportaudio.2.dylib')
+    except:
+        pass
 
-    # Check common locations with detailed logging
+    # Check common locations
     common_paths = [
         '/usr/local/lib/libportaudio.2.dylib',
         '/opt/homebrew/lib/libportaudio.2.dylib',
-        '/usr/lib/libportaudio.2.dylib',
-        os.path.expanduser('~/Frameworks/libportaudio.2.dylib')
     ]
     for path in common_paths:
         if os.path.exists(path):
-            print(f"Found PortAudio at common location: {path}")
             return path
-        else:
-            print(f"Checked location (not found): {path}")
-
-    print("ERROR: PortAudio library not found in any expected location")
     return None
 
 portaudio_path = get_portaudio_path()
@@ -55,10 +40,6 @@ if not portaudio_path:
 
 print(f"Using PortAudio from: {portaudio_path}")
 
-# Add recipe directory to Python path
-recipe_dir = os.path.join(os.path.dirname(__file__), 'src', 'recipes')
-sys.path.append(recipe_dir)
-
 OPTIONS = {
     'argv_emulation': False,
     'iconfile': 'src/assets/AppIcon.icns',
@@ -66,9 +47,8 @@ OPTIONS = {
     'includes': ['numpy', 'whisper', 'pyautogui'],
     'excludes': ['matplotlib', 'tkinter', 'PyQt5', 'wx', 'test'],
     'resources': ['src/assets'],
-    'frameworks': [],  # Let the recipe handle frameworks
+    'frameworks': [portaudio_path],
     'strip': True,
-    'recipe_plugins': ['portaudio_recipe'],
     'plist': {
         'CFBundleName': 'TalkToMe',
         'CFBundleDisplayName': 'TalkToMe',
