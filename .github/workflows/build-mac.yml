@@ -26,8 +26,6 @@ jobs:
         echo "CFLAGS=-I$PORTAUDIO_PREFIX/include" >> $GITHUB_ENV
         echo "LDFLAGS=-L$PORTAUDIO_PREFIX/lib" >> $GITHUB_ENV
         echo "PKG_CONFIG_PATH=$PORTAUDIO_PREFIX/lib/pkgconfig" >> $GITHUB_ENV
-        echo "DYLD_LIBRARY_PATH=$PORTAUDIO_PREFIX/lib" >> $GITHUB_ENV
-        ls -l $PORTAUDIO_PREFIX/lib/libportaudio*
 
     - name: Install Dependencies
       run: |
@@ -39,20 +37,23 @@ jobs:
     - name: Build App
       run: |
         rm -rf dist build
-        PORTAUDIO_LIB=$(brew --prefix portaudio)/lib/libportaudio.2.dylib
-        echo "Using PortAudio lib: $PORTAUDIO_LIB"
+        # Build the app without framework detection
         python setup.py py2app -vv
+
+        # Create Frameworks directory and copy PortAudio
         mkdir -p dist/TalkToMe.app/Contents/Frameworks
-        cp "$PORTAUDIO_LIB" dist/TalkToMe.app/Contents/Frameworks/
+        cp $(brew --prefix portaudio)/lib/libportaudio.2.dylib dist/TalkToMe.app/Contents/Frameworks/
+
+        # Fix library references
         PYAUDIO_SO=$(find dist/TalkToMe.app -name "_portaudio.so")
         if [ -n "$PYAUDIO_SO" ]; then
-          install_name_tool -change "$PORTAUDIO_LIB" \
+          chmod +w "$PYAUDIO_SO"
+          install_name_tool -change "@loader_path/libportaudio.2.dylib" \
             "@rpath/libportaudio.2.dylib" "$PYAUDIO_SO"
           install_name_tool -id "@rpath/libportaudio.2.dylib" \
             dist/TalkToMe.app/Contents/Frameworks/libportaudio.2.dylib
+          install_name_tool -add_rpath "@executable_path/../Frameworks" "$PYAUDIO_SO"
         fi
-        install_name_tool -add_rpath "@executable_path/../Frameworks" \
-          dist/TalkToMe.app/Contents/MacOS/TalkToMe
 
     - name: Create DMG
       run: |
