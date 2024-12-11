@@ -9,4 +9,3 @@ setuptools>=65.5.1
 rumps>=0.4.0; platform_system=="Darwin"
 pynput>=1.7.6
 Pillow>=10.1.0  # Required for PIL modules
-python-tkinter>=3.11.0; platform_system=="Darwin"  # Required for PIL._tkinter
