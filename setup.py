@@ -10,29 +10,41 @@ DATA_FILES = [
     ('assets', ['src/assets/AppIcon.icns', 'src/assets/background.png'])
 ]
 
-# Get PortAudio library path
-try:
-    PORTAUDIO_PATH = subprocess.check_output(['brew', '--prefix', 'portaudio']).decode().strip()
-    PORTAUDIO_LIB = os.path.join(PORTAUDIO_PATH, 'lib', 'libportaudio.2.dylib')
-except:
-    PORTAUDIO_LIB = None
+def find_portaudio():
+    """Find PortAudio library with detailed logging."""
+    # Try Homebrew first
+    try:
+        portaudio_path = subprocess.check_output(['brew', '--prefix', 'portaudio']).decode().strip()
+        lib_path = os.path.join(portaudio_path, 'lib', 'libportaudio.2.dylib')
+        if os.path.exists(lib_path):
+            print(f"Found PortAudio via Homebrew at: {lib_path}")
+            return lib_path
+    except Exception as e:
+        print(f"Homebrew detection failed: {e}")
 
-# Search common locations if brew fails
-if not PORTAUDIO_LIB or not os.path.exists(PORTAUDIO_LIB):
+    # Search common locations
     common_paths = [
         '/usr/local/lib/libportaudio.2.dylib',
         '/opt/local/lib/libportaudio.2.dylib',
         '/usr/lib/libportaudio.2.dylib',
         '/opt/homebrew/lib/libportaudio.2.dylib'
     ]
+
     for path in common_paths:
         if os.path.exists(path):
-            PORTAUDIO_LIB = path
-            break
-    else:
-        raise ValueError("Could not find PortAudio library")
+            print(f"Found PortAudio at: {path}")
+            return path
+        else:
+            print(f"Checked path (not found): {path}")
 
-print(f"Using PortAudio library at: {PORTAUDIO_LIB}")
+    raise ValueError("Could not find PortAudio library in any standard location")
+
+try:
+    PORTAUDIO_LIB = find_portaudio()
+    print(f"Using PortAudio library at: {PORTAUDIO_LIB}")
+except Exception as e:
+    print(f"Error finding PortAudio: {e}")
+    sys.exit(1)
 
 OPTIONS = {
     'argv_emulation': False,
@@ -41,7 +53,8 @@ OPTIONS = {
     'includes': ['numpy', 'whisper', 'pyautogui'],
     'excludes': ['matplotlib', 'tkinter', 'PyQt5', 'wx', 'test'],
     'resources': ['src/assets'],
-    'frameworks': [PORTAUDIO_LIB],  # Include as framework
+    'frameworks': [PORTAUDIO_LIB],
+    'binary_includes': [PORTAUDIO_LIB],  # Add binary_includes for extra safety
     'strip': True,
     'plist': {
         'CFBundleName': 'TalkToMe',
