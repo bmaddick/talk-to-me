@@ -20,33 +20,23 @@ jobs:
 
     - name: Install System Dependencies
       run: |
-        # Install PortAudio
+        # Install PortAudio and get its location
         brew install portaudio
         PORTAUDIO_PATH=$(brew --prefix portaudio)
         echo "PORTAUDIO_PATH=$PORTAUDIO_PATH" >> $GITHUB_ENV
 
-        # Create framework structure
-        FRAMEWORK_NAME="libportaudio.2.dylib.framework"
-        mkdir -p "$FRAMEWORK_NAME/Versions/A"
-        cp "$PORTAUDIO_PATH/lib/libportaudio.2.dylib" "$FRAMEWORK_NAME/Versions/A/"
-        chmod +x "$FRAMEWORK_NAME/Versions/A/libportaudio.2.dylib"
-
-        # Create symbolic links
-        cd "$FRAMEWORK_NAME"
-        ln -sf "Versions/A/libportaudio.2.dylib" "libportaudio.2.dylib"
-        cd Versions
-        ln -sf "A" "Current"
-        cd ../..
+        # Create lib directory and copy PortAudio
+        mkdir -p lib
+        cp "$PORTAUDIO_PATH/lib/libportaudio.2.dylib" lib/
+        chmod +x lib/libportaudio.2.dylib
 
         # Fix install name
-        install_name_tool -id "@executable_path/../Frameworks/$FRAMEWORK_NAME/Versions/A/libportaudio.2.dylib" \
-          "$FRAMEWORK_NAME/Versions/A/libportaudio.2.dylib"
+        install_name_tool -id "@executable_path/../Frameworks/libportaudio.2.dylib" lib/libportaudio.2.dylib
 
-        # Verify framework
-        echo "Framework structure:"
-        ls -R "$FRAMEWORK_NAME"
-        echo "Library dependencies:"
-        otool -L "$FRAMEWORK_NAME/Versions/A/libportaudio.2.dylib"
+        # Verify library
+        echo "Library location and dependencies:"
+        ls -l lib/
+        otool -L lib/libportaudio.2.dylib
 
     - name: Create App Assets
       run: |
@@ -82,8 +72,8 @@ jobs:
     - name: Build App
       run: |
         # Set environment variables
-        export DYLD_LIBRARY_PATH="$PWD/$FRAMEWORK_NAME:$DYLD_LIBRARY_PATH"
-        export LIBRARY_PATH="$PWD/$FRAMEWORK_NAME:$LIBRARY_PATH"
+        export DYLD_LIBRARY_PATH="$PWD/lib:$DYLD_LIBRARY_PATH"
+        export LIBRARY_PATH="$PWD/lib:$LIBRARY_PATH"
 
         # Clean previous builds
         rm -rf build dist
