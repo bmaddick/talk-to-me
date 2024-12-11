@@ -31,14 +31,9 @@ jobs:
         echo "LIBRARY_PATH=$PORTAUDIO_PREFIX/lib:$LIBRARY_PATH" >> $GITHUB_ENV
         echo "PKG_CONFIG_PATH=$PORTAUDIO_PREFIX/lib/pkgconfig:$PKG_CONFIG_PATH" >> $GITHUB_ENV
 
-        # Create frameworks directory and copy PortAudio
-        mkdir -p build/frameworks
-        cp "$PORTAUDIO_PREFIX/lib/libportaudio.2.dylib" build/frameworks/
-        chmod +x build/frameworks/libportaudio.2.dylib
-
-        # Fix library install name and verify
-        install_name_tool -id "@executable_path/../Frameworks/libportaudio.2.dylib" build/frameworks/libportaudio.2.dylib
-        otool -L build/frameworks/libportaudio.2.dylib
+        # Bundle PortAudio library
+        chmod +x bundle_portaudio.sh
+        ./bundle_portaudio.sh
 
     - name: Install Python Dependencies
       run: |
@@ -52,11 +47,8 @@ jobs:
         rm -rf src/assets
         mkdir -p src/assets
 
-        # Create a simple white background image
-        echo "P3\n800 400\n255\n" > src/assets/background.ppm
-        for i in {1..320000}; do echo "255 255 255"; done >> src/assets/background.ppm
-        sips -s format png src/assets/background.ppm --out src/assets/background.png
-        rm src/assets/background.ppm
+        # Create a simple white background PNG using base64
+        echo "iVBORw0KGgoAAAANSUhEUgAAAyAAAAGQAQAAAACle3N1AAAACXBIWXMAAA7DAAAOwwHHb6hkAAAAGXRFWHRTb2Z0d2FyZQB3d3cuaW5rc2NhcGUub3Jnm+48GgAAABJ0RVh0VGl0bGUAV2hpdGUgU3F1YXJlALjNkJYAAAATdEVYdEF1dGhvcgBEZXZpbiBBc3Npc3QC5YbmAAAAIXRFWHRDcmVhdGlvbiBUaW1lADIwMjQtMDEtMTFUMDA6NTk6MzlaJHJnAAAAHHRFWHRTb3VyY2UAaHR0cHM6Ly9pbmtzY2FwZS5vcmeb7jwaAAAAXUlEQVR42u3BMQEAAADCoPVPbQwfoAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAOD1ACffAAF99yA0AAAAAElFTkSuQmCC" | base64 -d > src/assets/background.png
 
         # Use system app icon
         cp /System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/GenericApplicationIcon.icns src/assets/AppIcon.icns
