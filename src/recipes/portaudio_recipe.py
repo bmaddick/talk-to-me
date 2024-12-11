@@ -27,16 +27,6 @@ def check(cmd, mf):
         except:
             pass
 
-        # Check common locations
-        common_paths = [
-            '/usr/local/lib/libportaudio.2.dylib',
-            '/opt/homebrew/lib/libportaudio.2.dylib',
-            '/usr/lib/libportaudio.2.dylib'
-        ]
-        for path in common_paths:
-            if os.path.exists(path):
-                print(f"Found PortAudio at: {path}")
-                return path
         return None
 
     portaudio_lib = get_lib_path()
@@ -46,26 +36,25 @@ def check(cmd, mf):
 
     print(f"Using PortAudio library: {portaudio_lib}")
 
-    # Create framework structure that py2app expects
-    framework_name = 'libportaudio.2.dylib'
-    framework_dir = os.path.join(os.getcwd(), 'build', 'frameworks')
-    framework_path = os.path.join(framework_dir, framework_name)
-    os.makedirs(framework_dir, exist_ok=True)
+    # Create simple library directory structure
+    lib_dir = os.path.join(os.getcwd(), 'lib')
+    lib_path = os.path.join(lib_dir, 'libportaudio.2.dylib')
+    os.makedirs(lib_dir, exist_ok=True)
 
-    # Copy library directly to frameworks directory
-    if not os.path.exists(framework_path):
-        shutil.copy2(portaudio_lib, framework_path)
-        os.chmod(framework_path, 0o755)
+    # Copy library to lib directory
+    if not os.path.exists(lib_path):
+        shutil.copy2(portaudio_lib, lib_path)
+        os.chmod(lib_path, 0o755)
         subprocess.run([
             'install_name_tool', '-id',
-            '@executable_path/../Frameworks/libportaudio.2.dylib',
-            framework_path
+            '@executable_path/../lib/libportaudio.2.dylib',
+            lib_path
         ], check=True)
 
-    print(f"Framework library created at: {framework_path}")
-    subprocess.run(['otool', '-L', framework_path], check=True)
+    print(f"Library created at: {lib_path}")
+    subprocess.run(['otool', '-L', lib_path], check=True)
 
     # Return the library path for py2app to handle
     return dict(
-        frameworks=[framework_path]
+        dylibs=[lib_path]
     )
