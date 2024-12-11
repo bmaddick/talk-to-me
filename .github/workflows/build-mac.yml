@@ -18,126 +18,17 @@ jobs:
       with:
         python-version: '3.11'
 
-    - name: Install PortAudio
-      run: |
-        brew install portaudio
-        # Debug output
-        echo "PortAudio location: $(brew --prefix portaudio)"
-        echo "Library files:"
-        ls -la $(brew --prefix portaudio)/lib/
-        # Set environment variables for PyInstaller to find libraries
-        echo "DYLD_LIBRARY_PATH=$(brew --prefix portaudio)/lib" >> $GITHUB_ENV
-        echo "LIBRARY_PATH=$(brew --prefix portaudio)/lib" >> $GITHUB_ENV
-        echo "CPATH=$(brew --prefix portaudio)/include" >> $GITHUB_ENV
-
     - name: Install Dependencies
       run: |
+        brew install portaudio
         python -m pip install --upgrade pip setuptools wheel
-        pip install pyinstaller pyaudio
         pip install -r requirements.txt
-        # Debug PyAudio installation
-        python -c "import pyaudio; print('PyAudio version:', pyaudio.__version__)"
+        pip install pyinstaller
 
     - name: Build App
       run: |
-        # Clean previous builds
-        rm -rf dist build
-
-        # Debug environment
-        echo "Current directory: $PWD"
-        echo "PortAudio library location:"
-        ls -la /opt/homebrew/opt/portaudio/lib/
-
-        # Create spec file with correct library path
-        cat > TalkToMe.spec << EOL
-        # -*- mode: python ; coding: utf-8 -*-
-        import os
-        import sys
-        from PyInstaller.utils.hooks import collect_dynamic_libs
-
-        block_cipher = None
-
-        # Get PortAudio path from Homebrew
-        portaudio_lib = '/opt/homebrew/opt/portaudio/lib/libportaudio.2.dylib'
-        if not os.path.exists(portaudio_lib):
-            print(f'ERROR: PortAudio library not found at {portaudio_lib}')
-            sys.exit(1)
-        print(f'Found PortAudio at: {portaudio_lib}')
-
-        a = Analysis(
-            ['src/main.py'],
-            pathex=[os.getcwd(), '/opt/homebrew/opt/portaudio/lib'],
-            binaries=[(portaudio_lib, '.')],
-            datas=[],
-            hiddenimports=['pyaudio', 'numpy.core.multiarray', 'whisper'],
-            hookspath=[],
-            hooksconfig={},
-            runtime_hooks=[],
-            excludes=[],
-            win_no_prefer_redirects=False,
-            win_private_assemblies=False,
-            cipher=block_cipher,
-            noarchive=False,
-        )
-
-        pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
-
-        exe = EXE(
-            pyz,
-            a.scripts,
-            [],
-            exclude_binaries=True,
-            name='TalkToMe',
-            debug=False,
-            bootloader_ignore_signals=False,
-            strip=False,
-            upx=True,
-            console=False,
-            disable_windowed_traceback=False,
-            argv_emulation=False,
-            target_arch=None,
-            codesign_identity=None,
-            entitlements_file=None,
-        )
-
-        coll = COLLECT(
-            exe,
-            a.binaries,
-            a.zipfiles,
-            a.datas,
-            strip=False,
-            upx=True,
-            upx_exclude=[],
-            name='TalkToMe'
-        )
-
-        app = BUNDLE(
-            coll,
-            name='TalkToMe.app',
-            bundle_identifier='com.bmaddick.talktome',
-            info_plist={
-                'NSMicrophoneUsageDescription': 'TalkToMe needs microphone access to convert speech to text.',
-                'LSMinimumSystemVersion': '10.15.0',
-                'NSRequiresAquaSystemAppearance': False,
-            }
-        )
-        EOL
-
-        # Build with PyInstaller
-        pyinstaller TalkToMe.spec
-
-        # Verify the built app structure
-        echo "Built app contents:"
-        ls -la dist/TalkToMe.app/Contents/MacOS/
-
-        # Create DMG structure
-        mkdir -p dmg
-        cp -r "dist/TalkToMe.app" dmg/
-        ln -s /Applications dmg/
-
-    - name: Create DMG
-      run: |
-        hdiutil create -volname "TalkToMe" -srcfolder dmg -ov -format UDZO TalkToMe.dmg
+        chmod +x build_mac_app.sh
+        ./build_mac_app.sh
 
     - name: Upload Artifacts
       uses: actions/upload-artifact@v3
