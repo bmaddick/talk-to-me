@@ -45,21 +45,21 @@ jobs:
         # Clean up any existing directories
         rm -rf src/assets AppIcon.iconset
         mkdir -p src/assets
-        # Create a simple blue circle icon
-        convert -size 1024x1024 xc:none \
-          -fill '#0066cc' \
-          -draw 'circle 512,512 512,100' \
-          src/assets/AppIcon.png
+
+        # Create a temporary 1024x1024 white PNG for base
+        osascript -e 'tell application "System Events" to tell current desktop to set picture to "/System/Library/Desktop Pictures/Solid Colors/White.png"' || true
+        screencapture -R 0,0,1024,1024 src/assets/AppIcon.png
 
         # Create iconset directory
         mkdir AppIcon.iconset
-        # Generate icon files using sips (native macOS tool)
+        # Generate icon files using sips
         for size in 16 32 128 256 512; do
           sips -z $size $size src/assets/AppIcon.png --out AppIcon.iconset/icon_${size}x${size}.png
           if [ $size -lt 512 ]; then
             sips -z $((size*2)) $((size*2)) src/assets/AppIcon.png --out AppIcon.iconset/icon_${size}x${size}@2x.png
           fi
         done
+
         # Create icns file
         iconutil -c icns AppIcon.iconset
         mv AppIcon.icns src/assets/
@@ -67,15 +67,9 @@ jobs:
     - name: Create DMG Background
       run: |
         mkdir -p src/assets
-        # Create simple background with arrow and text
-        convert -size 800x400 xc:white \
-          -fill black \
-          -gravity center \
-          -pointsize 24 \
-          -draw "text 0,-100 'Install TalkToMe'" \
-          -pointsize 14 \
-          -draw "text 0,100 '→ Drag to Applications'" \
-          src/assets/background.png
+        # Create simple white background using native tools
+        osascript -e 'tell application "System Events" to tell current desktop to set picture to "/System/Library/Desktop Pictures/Solid Colors/White.png"' || true
+        screencapture -R 0,0,800,400 src/assets/background.png
 
     - name: Build App and Create DMG
       run: |
