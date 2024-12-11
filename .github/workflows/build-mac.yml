@@ -50,10 +50,10 @@ jobs:
         pip install --use-pep517 rubicon-objc
         pip install --use-pep517 py2app
 
-        # Install PyAudio with PortAudio path
-        export LDFLAGS="-L$PWD/lib"
+        # Install PyAudio with PortAudio framework path
+        export LDFLAGS="-L$PWD/lib/libportaudio.2.dylib.framework/Versions/A"
         export CFLAGS="-I$(brew --prefix portaudio)/include"
-        DYLD_LIBRARY_PATH=$PWD/lib pip install --use-pep517 pyaudio
+        DYLD_FRAMEWORK_PATH=$PWD/lib pip install --use-pep517 pyaudio
 
         # Install remaining dependencies
         pip install -r requirements.txt
