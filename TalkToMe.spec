@@ -6,8 +6,11 @@ a = Analysis(
     ['src/main.py'],
     pathex=[],
     binaries=[],
-    datas=[('src/assets/AppIcon.icns', 'assets')],
-    hiddenimports=['pyaudio', 'whisper', 'pynput'],
+    datas=[
+        ('src/assets/AppIcon.icns', 'assets'),
+        ('src/assets/AppIcon.icns', '.')  # Also copy to root for rumps
+    ],
+    hiddenimports=['pyaudio', 'whisper', 'pynput', 'rumps'],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
