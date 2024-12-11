@@ -8,13 +8,22 @@ sys.setrecursionlimit(5000)
 def get_portaudio_path():
     try:
         result = subprocess.run(['brew', '--prefix', 'portaudio'],
-                              capture_output=True, text=True, check=True)
+                             capture_output=True, text=True, check=True)
         prefix = result.stdout.strip()
         lib_path = os.path.join(prefix, 'lib', 'libportaudio.2.dylib')
         if not os.path.exists(lib_path):
             raise ValueError(f"PortAudio library not found at {lib_path}")
         print(f"Found PortAudio at: {lib_path}")
-        return lib_path
+
+        # Create lib directory if it doesn't exist
+        os.makedirs('lib', exist_ok=True)
+
+        # Copy PortAudio to local lib directory
+        local_lib_path = os.path.join('lib', 'libportaudio.2.dylib')
+        subprocess.run(['cp', lib_path, local_lib_path], check=True)
+        subprocess.run(['chmod', '644', local_lib_path], check=True)
+
+        return local_lib_path
     except Exception as e:
         print(f"Error finding PortAudio: {e}")
         return None
