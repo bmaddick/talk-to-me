@@ -26,16 +26,14 @@ jobs:
         PORTAUDIO_LIB="$PORTAUDIO_PATH/lib/libportaudio.2.dylib"
         echo "PORTAUDIO_LIB=$PORTAUDIO_LIB" >> $GITHUB_ENV
 
-        # Create library directory
-        mkdir -p dist/TalkToMe.app/Contents/Frameworks/
-        cp "$PORTAUDIO_LIB" dist/TalkToMe.app/Contents/Frameworks/
+        # Create lib directory and copy PortAudio
+        mkdir -p lib
+        cp "$PORTAUDIO_LIB" lib/libportaudio.2.dylib
+        chmod 755 lib/libportaudio.2.dylib
 
-        # Update library install name
-        install_name_tool -id "@executable_path/../Frameworks/libportaudio.2.dylib" \
-          dist/TalkToMe.app/Contents/Frameworks/libportaudio.2.dylib
-
-        # Verify library setup
-        otool -L dist/TalkToMe.app/Contents/Frameworks/libportaudio.2.dylib
+        # Set up environment for build
+        echo "DYLD_LIBRARY_PATH=$PWD/lib" >> $GITHUB_ENV
+        echo "LIBRARY_PATH=$PWD/lib" >> $GITHUB_ENV
 
     - name: Create App Assets
       run: |
@@ -74,31 +72,28 @@ jobs:
     - name: Build App
       env:
         PORTAUDIO_LIB: ${{ env.PORTAUDIO_LIB }}
-        DYLD_LIBRARY_PATH: /opt/homebrew/lib
+        DYLD_LIBRARY_PATH: ${{ env.DYLD_LIBRARY_PATH }}
+        LIBRARY_PATH: ${{ env.LIBRARY_PATH }}
       run: |
         # Clean previous builds
         rm -rf dist build
 
-        # Create app directory structure
-        mkdir -p dist/TalkToMe.app/Contents/Frameworks/
-
-        # Copy PortAudio library
-        cp "$PORTAUDIO_LIB" dist/TalkToMe.app/Contents/Frameworks/libportaudio.2.dylib
-        chmod 755 dist/TalkToMe.app/Contents/Frameworks/libportaudio.2.dylib
-
-        # Update library install name
-        install_name_tool -id "@executable_path/../Frameworks/libportaudio.2.dylib" \
-          dist/TalkToMe.app/Contents/Frameworks/libportaudio.2.dylib
-
         # Build with verbose output
         PYTHONPATH="$PWD" python setup.py py2app -vv
 
-        # Fix PyAudio extension references
+        # Copy PortAudio to app bundle
+        FRAMEWORKS_DIR="dist/TalkToMe.app/Contents/Frameworks"
+        mkdir -p "$FRAMEWORKS_DIR"
+        cp lib/libportaudio.2.dylib "$FRAMEWORKS_DIR/"
+
+        # Fix library references
         PYAUDIO_SO=$(find dist/TalkToMe.app -name "_portaudio.so")
         if [ -n "$PYAUDIO_SO" ]; then
           install_name_tool -change "$PORTAUDIO_LIB" \
             "@rpath/libportaudio.2.dylib" "$PYAUDIO_SO"
           install_name_tool -change "/usr/local/lib/libportaudio.2.dylib" \
+            "@rpath/libportaudio.2.dylib" "$PYAUDIO_SO"
+          install_name_tool -change "lib/libportaudio.2.dylib" \
             "@rpath/libportaudio.2.dylib" "$PYAUDIO_SO"
         fi
 
@@ -106,9 +101,9 @@ jobs:
         MACOS_BIN="dist/TalkToMe.app/Contents/MacOS/TalkToMe"
         install_name_tool -add_rpath "@executable_path/../Frameworks" "$MACOS_BIN"
 
-        # Verify final configuration
-        echo "Final library configuration:"
-        otool -L dist/TalkToMe.app/Contents/Frameworks/libportaudio.2.dylib
+        # Verify configuration
+        echo "Library configuration:"
+        otool -L "$FRAMEWORKS_DIR/libportaudio.2.dylib"
         if [ -n "$PYAUDIO_SO" ]; then
           echo "PyAudio extension configuration:"
           otool -L "$PYAUDIO_SO"
