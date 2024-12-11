@@ -11,10 +11,10 @@ jobs:
     runs-on: macos-latest
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
 
     - name: Set up Python
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v4
       with:
         python-version: '3.11'
 
@@ -22,67 +22,38 @@ jobs:
       run: |
         python -m pip install --upgrade pip setuptools wheel
         pip install -r requirements.txt
-        pip install py2app
+        pip install py2app --use-pep517
 
     - name: Install and Configure PortAudio
       run: |
-        # Install PortAudio using Homebrew
         brew install portaudio
-
-        # Get PortAudio paths
         PORTAUDIO_PREFIX=$(brew --prefix portaudio)
         PORTAUDIO_LIB="$PORTAUDIO_PREFIX/lib/libportaudio.2.dylib"
-
-        # Create directories
         mkdir -p lib
-
-        # Copy PortAudio library
         cp "$PORTAUDIO_LIB" lib/
         chmod 755 lib/libportaudio.2.dylib
-
-        # Set environment variables
-        echo "PORTAUDIO_PATH=$PORTAUDIO_PREFIX" >> $GITHUB_ENV
-        echo "DYLD_LIBRARY_PATH=$PWD/lib" >> $GITHUB_ENV
-        echo "LIBRARY_PATH=$PWD/lib" >> $GITHUB_ENV
-
-        # Verify library
+        echo "DYLD_LIBRARY_PATH=$PWD/lib:$DYLD_LIBRARY_PATH" >> $GITHUB_ENV
+        echo "LIBRARY_PATH=$PWD/lib:$LIBRARY_PATH" >> $GITHUB_ENV
         otool -L lib/libportaudio.2.dylib
 
     - name: Build App
       run: |
-        # Clean previous builds
         rm -rf dist build
-
-        # Build app
         python setup.py py2app -vv
-
-        # Create Frameworks directory
         mkdir -p dist/TalkToMe.app/Contents/Frameworks
-
-        # Copy and configure PortAudio
         cp lib/libportaudio.2.dylib dist/TalkToMe.app/Contents/Frameworks/
-
-        # Update library paths
         PYAUDIO_SO=$(find dist/TalkToMe.app -name "_portaudio.so")
         if [ -n "$PYAUDIO_SO" ]; then
-          install_name_tool -change "@loader_path/libportaudio.2.dylib" \
-            "@rpath/libportaudio.2.dylib" "$PYAUDIO_SO"
-          install_name_tool -change "/usr/local/lib/libportaudio.2.dylib" \
-            "@rpath/libportaudio.2.dylib" "$PYAUDIO_SO"
-          install_name_tool -change "lib/libportaudio.2.dylib" \
-            "@rpath/libportaudio.2.dylib" "$PYAUDIO_SO"
+          install_name_tool -change "@loader_path/libportaudio.2.dylib" "@rpath/libportaudio.2.dylib" "$PYAUDIO_SO"
+          install_name_tool -change "/usr/local/lib/libportaudio.2.dylib" "@rpath/libportaudio.2.dylib" "$PYAUDIO_SO"
+          install_name_tool -change "lib/libportaudio.2.dylib" "@rpath/libportaudio.2.dylib" "$PYAUDIO_SO"
+          install_name_tool -id "@rpath/libportaudio.2.dylib" dist/TalkToMe.app/Contents/Frameworks/libportaudio.2.dylib
         fi
-
-        # Add rpath to executable
-        install_name_tool -add_rpath "@executable_path/../Frameworks" \
-          dist/TalkToMe.app/Contents/MacOS/TalkToMe
+        install_name_tool -add_rpath "@executable_path/../Frameworks" dist/TalkToMe.app/Contents/MacOS/TalkToMe
 
     - name: Create DMG
       run: |
-        # Install create-dmg
         brew install create-dmg
-
-        # Create DMG
         create-dmg \
           --volname "TalkToMe" \
           --volicon "src/assets/AppIcon.icns" \
@@ -96,7 +67,7 @@ jobs:
           "dist/TalkToMe.app"
 
     - name: Upload Artifacts
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3
       with:
         name: TalkToMe
         path: TalkToMe.dmg
