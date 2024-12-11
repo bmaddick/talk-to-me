@@ -25,15 +25,16 @@ jobs:
         PORTAUDIO_PATH=$(brew --prefix portaudio)
         echo "PORTAUDIO_PATH=$PORTAUDIO_PATH" >> $GITHUB_ENV
 
-        # Make scripts executable
-        chmod +x prepare_portaudio_framework.sh
+        # Create lib directory and copy PortAudio
+        mkdir -p lib
+        cp "$PORTAUDIO_PATH/lib/libportaudio.2.dylib" lib/
+        chmod +x lib/libportaudio.2.dylib
 
-        # Create PortAudio framework
-        ./prepare_portaudio_framework.sh
+        # Fix library install name
+        install_name_tool -id "@rpath/libportaudio.2.dylib" lib/libportaudio.2.dylib
 
-        # Verify framework creation
-        ls -R PortAudio.framework/
-        otool -L PortAudio.framework/Versions/Current/PortAudio
+        # Verify library setup
+        otool -L lib/libportaudio.2.dylib
 
     - name: Create App Assets
       run: |
@@ -59,17 +60,20 @@ jobs:
         python -m pip install --use-pep517 -r requirements.txt
         python -m pip install --use-pep517 py2app
 
-        # Verify PyAudio installation and framework
+        # Verify PyAudio installation
         python -c "
         import pyaudio, os
         print('PyAudio:', pyaudio.__file__)
-        print('PortAudio framework exists:', os.path.exists('PortAudio.framework'))
+        print('PortAudio lib exists:', os.path.exists('lib/libportaudio.2.dylib'))
         "
 
     - name: Build App
       run: |
         # Clean previous builds
         rm -rf dist build
+
+        # Set library path for build
+        export DYLD_LIBRARY_PATH="$PWD/lib:$DYLD_LIBRARY_PATH"
 
         # Build with verbose output
         PYTHONPATH="$PWD" python setup.py py2app -vv
