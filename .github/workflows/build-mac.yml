@@ -25,18 +25,19 @@ jobs:
         PORTAUDIO_PATH=$(brew --prefix portaudio)
         echo "PORTAUDIO_PATH=$PORTAUDIO_PATH" >> $GITHUB_ENV
 
-        # Create lib directory and copy PortAudio
-        mkdir -p lib
-        cp "$PORTAUDIO_PATH/lib/libportaudio.2.dylib" lib/
-        chmod +x lib/libportaudio.2.dylib
+        # Create audio plugins directory structure
+        mkdir -p plugins/audio
+        cp "$PORTAUDIO_PATH/lib/libportaudio.2.dylib" plugins/audio/
+        chmod +x plugins/audio/libportaudio.2.dylib
 
         # Fix install name
-        install_name_tool -id "@executable_path/../Frameworks/libportaudio.2.dylib" lib/libportaudio.2.dylib
+        install_name_tool -id "@executable_path/../plugins/audio/libportaudio.2.dylib" plugins/audio/libportaudio.2.dylib
 
-        # Verify library
-        echo "Library location and dependencies:"
-        ls -l lib/
-        otool -L lib/libportaudio.2.dylib
+        # Verify plugin structure
+        echo "Plugin structure:"
+        ls -R plugins/
+        echo "Library dependencies:"
+        otool -L plugins/audio/libportaudio.2.dylib
 
     - name: Create App Assets
       run: |
@@ -72,8 +73,8 @@ jobs:
     - name: Build App
       run: |
         # Set environment variables
-        export DYLD_LIBRARY_PATH="$PWD/lib:$DYLD_LIBRARY_PATH"
-        export LIBRARY_PATH="$PWD/lib:$LIBRARY_PATH"
+        export DYLD_LIBRARY_PATH="$PWD/plugins/audio:$DYLD_LIBRARY_PATH"
+        export LIBRARY_PATH="$PWD/plugins/audio:$LIBRARY_PATH"
 
         # Clean previous builds
         rm -rf build dist
