@@ -20,24 +20,28 @@ jobs:
 
     - name: Install System Dependencies
       run: |
+        # Install dependencies
         brew install create-dmg
         brew install portaudio
 
-        # Set up PortAudio paths
+        # Set up environment variables
         PORTAUDIO_PREFIX=$(brew --prefix portaudio)
         echo "PORTAUDIO_PATH=$PORTAUDIO_PREFIX" >> $GITHUB_ENV
+        echo "DYLD_LIBRARY_PATH=$PORTAUDIO_PREFIX/lib:$DYLD_LIBRARY_PATH" >> $GITHUB_ENV
+        echo "LIBRARY_PATH=$PORTAUDIO_PREFIX/lib:$LIBRARY_PATH" >> $GITHUB_ENV
 
-        # Create frameworks directory
+        # Create frameworks directory and copy PortAudio
         mkdir -p build/frameworks
-
-        # Copy and configure PortAudio
-        cp $PORTAUDIO_PREFIX/lib/libportaudio.2.dylib build/frameworks/
+        cp "$PORTAUDIO_PREFIX/lib/libportaudio.2.dylib" build/frameworks/
         chmod +x build/frameworks/libportaudio.2.dylib
-        install_name_tool -id @executable_path/../Frameworks/libportaudio.2.dylib build/frameworks/libportaudio.2.dylib
+
+        # Fix library install name
+        install_name_tool -id "@executable_path/../Frameworks/libportaudio.2.dylib" build/frameworks/libportaudio.2.dylib
 
         # Verify setup
         ls -la build/frameworks/
         otool -L build/frameworks/libportaudio.2.dylib
+        echo "PortAudio library location: $(find /opt/homebrew -name 'libportaudio*.dylib')"
 
     - name: Install Python Dependencies
       run: |
