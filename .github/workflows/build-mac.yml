@@ -20,13 +20,13 @@ jobs:
 
     - name: Install System Dependencies
       run: |
-        # Install PortAudio
+        # Install PortAudio and verify installation
         brew install portaudio
         PORTAUDIO_PATH=$(brew --prefix portaudio)
         PORTAUDIO_LIB="$PORTAUDIO_PATH/lib/libportaudio.2.dylib"
         echo "PORTAUDIO_LIB=$PORTAUDIO_LIB" >> $GITHUB_ENV
 
-        # Verify PortAudio installation
+        # Verify PortAudio installation and dependencies
         if [ ! -f "$PORTAUDIO_LIB" ]; then
           echo "Error: PortAudio library not found"
           exit 1
@@ -53,19 +53,25 @@ jobs:
 
     - name: Install Python Dependencies
       run: |
+        # Install dependencies with PEP 517 support
         python -m pip install --upgrade pip setuptools wheel
         python -m pip install --use-pep517 -r requirements.txt
         python -m pip install --use-pep517 py2app
 
-        # Set library paths
-        export DYLD_LIBRARY_PATH="$PORTAUDIO_LIB:$DYLD_LIBRARY_PATH"
-        export LIBRARY_PATH="$PORTAUDIO_LIB:$LIBRARY_PATH"
+        # Configure library paths
+        mkdir -p /usr/local/lib
+        ln -sf "$PORTAUDIO_LIB" /usr/local/lib/libportaudio.2.dylib
+        export DYLD_LIBRARY_PATH="/usr/local/lib:$DYLD_LIBRARY_PATH"
+        export LIBRARY_PATH="/usr/local/lib:$LIBRARY_PATH"
 
         # Verify PyAudio installation
         python -c "
         import pyaudio
         print('PyAudio version:', pyaudio.__version__)
         print('PyAudio file:', pyaudio.__file__)
+        pa = pyaudio.PyAudio()
+        print('PortAudio initialized successfully')
+        pa.terminate()
         "
 
     - name: Build App
@@ -75,27 +81,39 @@ jobs:
         # Clean previous builds
         rm -rf build dist
 
-        # Build with verbose output
-        PYTHONPATH="$PWD" python setup.py py2app -vv
+        # Prepare Frameworks directory
+        mkdir -p Frameworks
+        cp "$PORTAUDIO_LIB" Frameworks/
+        chmod +x Frameworks/libportaudio.2.dylib
+        install_name_tool -id "@rpath/libportaudio.2.dylib" Frameworks/libportaudio.2.dylib
 
-        # Create Frameworks directory and copy PortAudio
+        # Build with verbose output and explicit library path
+        DYLD_LIBRARY_PATH="/usr/local/lib:$DYLD_LIBRARY_PATH" \
+        LIBRARY_PATH="/usr/local/lib:$LIBRARY_PATH" \
+        PYTHONPATH="$PWD" \
+        python setup.py py2app -vv
+
+        # Copy and configure framework in app bundle
         mkdir -p dist/TalkToMe.app/Contents/Frameworks
-        cp "$PORTAUDIO_LIB" dist/TalkToMe.app/Contents/Frameworks/
+        cp Frameworks/libportaudio.2.dylib dist/TalkToMe.app/Contents/Frameworks/
         chmod +x dist/TalkToMe.app/Contents/Frameworks/libportaudio.2.dylib
-
-        # Fix library references
-        install_name_tool -id "@rpath/libportaudio.2.dylib" \
-          dist/TalkToMe.app/Contents/Frameworks/libportaudio.2.dylib
 
         # Fix PyAudio extension references
         PYAUDIO_SO=$(find dist/TalkToMe.app -name "_portaudio.so")
         if [ -n "$PYAUDIO_SO" ]; then
           install_name_tool -change "$PORTAUDIO_LIB" \
             "@rpath/libportaudio.2.dylib" "$PYAUDIO_SO"
+          install_name_tool -change "/usr/local/lib/libportaudio.2.dylib" \
+            "@rpath/libportaudio.2.dylib" "$PYAUDIO_SO"
         fi
 
         # Verify bundle
+        echo "Verifying library configuration:"
         otool -L dist/TalkToMe.app/Contents/Frameworks/libportaudio.2.dylib
+        if [ -n "$PYAUDIO_SO" ]; then
+          echo "Verifying PyAudio extension:"
+          otool -L "$PYAUDIO_SO"
+        fi
 
     - name: Create DMG
       run: |
