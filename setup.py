@@ -10,15 +10,27 @@ DATA_FILES = [
     ('assets', ['src/assets/AppIcon.icns', 'src/assets/background.png'])
 ]
 
-# Get PortAudio library path from brew
+# Get PortAudio library path
 try:
     PORTAUDIO_PATH = subprocess.check_output(['brew', '--prefix', 'portaudio']).decode().strip()
     PORTAUDIO_LIB = os.path.join(PORTAUDIO_PATH, 'lib', 'libportaudio.2.dylib')
 except:
-    PORTAUDIO_LIB = '/usr/local/lib/libportaudio.2.dylib'
+    PORTAUDIO_LIB = None
 
-if not os.path.exists(PORTAUDIO_LIB):
-    raise ValueError(f"PortAudio library not found at {PORTAUDIO_LIB}")
+# Search common locations if brew fails
+if not PORTAUDIO_LIB or not os.path.exists(PORTAUDIO_LIB):
+    common_paths = [
+        '/usr/local/lib/libportaudio.2.dylib',
+        '/opt/local/lib/libportaudio.2.dylib',
+        '/usr/lib/libportaudio.2.dylib',
+        '/opt/homebrew/lib/libportaudio.2.dylib'
+    ]
+    for path in common_paths:
+        if os.path.exists(path):
+            PORTAUDIO_LIB = path
+            break
+    else:
+        raise ValueError("Could not find PortAudio library")
 
 print(f"Using PortAudio library at: {PORTAUDIO_LIB}")
 
@@ -29,8 +41,7 @@ OPTIONS = {
     'includes': ['numpy', 'whisper', 'pyautogui'],
     'excludes': ['matplotlib', 'tkinter', 'PyQt5', 'wx', 'test'],
     'resources': ['src/assets'],
-    'frameworks': [PORTAUDIO_LIB],
-    'binary_includes': [PORTAUDIO_LIB],
+    'frameworks': [PORTAUDIO_LIB],  # Include as framework
     'strip': True,
     'plist': {
         'CFBundleName': 'TalkToMe',
