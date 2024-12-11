@@ -1,10 +1,16 @@
 import sys
+import os
 sys.setrecursionlimit(5000)  # Increase recursion limit for py2app
 
 from setuptools import setup
 
 APP = ['src/main.py']
 DATA_FILES = [('assets', ['src/assets/AppIcon.icns', 'src/assets/background.png'])]
+
+# Get PortAudio path from environment
+PORTAUDIO_PATH = os.environ.get('PORTAUDIO_PATH', '/opt/homebrew/opt/portaudio')
+PORTAUDIO_LIB = os.path.join('build/frameworks/libportaudio.2.dylib')
+
 OPTIONS = {
     'argv_emulation': False,  # Disable argv emulation for better Mac integration
     'iconfile': 'src/assets/AppIcon.icns',
@@ -17,9 +23,7 @@ OPTIONS = {
         'tiktoken', 'torch', 'regex', 'tqdm'
     ],
     'excludes': ['matplotlib', 'tkinter', 'PyQt5', 'wx', 'test', 'sphinx', 'sqlalchemy', 'pandas', 'pygame'],
-    'frameworks': [
-        'build/frameworks/libportaudio.2.dylib',  # Use relative path to copied library
-    ],
+    'frameworks': [PORTAUDIO_LIB],
     'resources': ['src/assets'],
     'dylib_excludes': ['libgfortran.3.dylib', 'libquadmath.0.dylib', 'libgcc_s.1.dylib'],
     'strip': True,  # Strip debug symbols to reduce size
