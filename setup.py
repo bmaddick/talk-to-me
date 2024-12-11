@@ -7,9 +7,17 @@ from setuptools import setup
 APP = ['src/main.py']
 DATA_FILES = [('assets', ['src/assets/AppIcon.icns', 'src/assets/background.png'])]
 
-# Get PortAudio path from environment
-PORTAUDIO_PATH = os.environ.get('PORTAUDIO_PATH', '/opt/homebrew/opt/portaudio')
-PORTAUDIO_LIB = os.path.join('build/frameworks/libportaudio.2.dylib')
+# Get PortAudio path from environment and ensure it exists
+PORTAUDIO_PREFIX = os.environ.get('PORTAUDIO_PATH', '/opt/homebrew/opt/portaudio')
+PORTAUDIO_LIB = os.path.join(PORTAUDIO_PREFIX, 'lib', 'libportaudio.2.dylib')
+FRAMEWORK_PATH = os.path.join('build', 'frameworks', 'libportaudio.2.dylib')
+
+# Verify PortAudio library exists
+if not os.path.exists(PORTAUDIO_LIB):
+    raise ValueError(f"PortAudio library not found at {PORTAUDIO_LIB}")
+
+if not os.path.exists(FRAMEWORK_PATH):
+    raise ValueError(f"PortAudio framework not found at {FRAMEWORK_PATH}")
 
 OPTIONS = {
     'argv_emulation': False,  # Disable argv emulation for better Mac integration
@@ -23,7 +31,7 @@ OPTIONS = {
         'tiktoken', 'torch', 'regex', 'tqdm'
     ],
     'excludes': ['matplotlib', 'tkinter', 'PyQt5', 'wx', 'test', 'sphinx', 'sqlalchemy', 'pandas', 'pygame'],
-    'frameworks': [PORTAUDIO_LIB],
+    'frameworks': [FRAMEWORK_PATH],
     'resources': ['src/assets'],
     'dylib_excludes': ['libgfortran.3.dylib', 'libquadmath.0.dylib', 'libgcc_s.1.dylib'],
     'strip': True,  # Strip debug symbols to reduce size

@@ -24,28 +24,10 @@ jobs:
         brew install portaudio
         echo "Installed system dependencies successfully"
 
-    - name: Set up PortAudio
+    - name: Bundle Libraries
       run: |
-        # Create frameworks directory
-        mkdir -p build/frameworks
-        echo "Created frameworks directory"
-
-        # Get PortAudio path
-        PORTAUDIO_PATH=$(brew --prefix portaudio)
-        echo "PortAudio path: $PORTAUDIO_PATH"
-
-        # Copy PortAudio library
-        cp "$PORTAUDIO_PATH/lib/libportaudio.2.dylib" build/frameworks/
-        chmod +x build/frameworks/libportaudio.2.dylib
-        echo "Copied PortAudio library to build/frameworks"
-
-        # Fix library install name
-        install_name_tool -id "@executable_path/../Frameworks/libportaudio.2.dylib" build/frameworks/libportaudio.2.dylib
-        echo "Fixed library install name"
-
-        # Verify library exists and is executable
-        ls -l build/frameworks/libportaudio.2.dylib
-        otool -L build/frameworks/libportaudio.2.dylib
+        chmod +x bundle_libraries.sh
+        ./bundle_libraries.sh
 
     - name: Create App Assets
       run: |
@@ -86,9 +68,10 @@ jobs:
         echo "DYLD_LIBRARY_PATH: $DYLD_LIBRARY_PATH"
         echo "LIBRARY_PATH: $LIBRARY_PATH"
 
-        # Verify PortAudio library exists
+        # Verify libraries exist
         ls -l "$PORTAUDIO_PREFIX/lib/libportaudio.2.dylib"
         ls -l build/frameworks/libportaudio.2.dylib
+        otool -L build/frameworks/libportaudio.2.dylib
 
         # Build with verbose output
         python setup.py py2app -v
