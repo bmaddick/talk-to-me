@@ -55,17 +55,20 @@ if not portaudio_path:
 
 print(f"Using PortAudio from: {portaudio_path}")
 
+# Add recipe directory to Python path
+recipe_dir = os.path.join(os.path.dirname(__file__), 'src', 'recipes')
+sys.path.append(recipe_dir)
+
 OPTIONS = {
     'argv_emulation': False,
     'iconfile': 'src/assets/AppIcon.icns',
     'packages': ['numpy', 'whisper', 'pyaudio', 'tiktoken', 'torch'],
     'includes': ['numpy', 'whisper', 'pyautogui'],
     'excludes': ['matplotlib', 'tkinter', 'PyQt5', 'wx', 'test'],
-    'resources': ['src/assets', 'src/recipes'],
-    'dylib_excludes': ['libportaudio.2.dylib'],  # Exclude from automatic detection
-    'frameworks': [portaudio_path],  # Add explicitly
+    'resources': ['src/assets'],
+    'frameworks': [],  # Let the recipe handle frameworks
     'strip': True,
-    'recipes': ['src/recipes'],
+    'recipe_plugins': ['portaudio_recipe'],
     'plist': {
         'CFBundleName': 'TalkToMe',
         'CFBundleDisplayName': 'TalkToMe',
