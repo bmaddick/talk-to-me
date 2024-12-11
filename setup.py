@@ -43,8 +43,9 @@ OPTIONS = {
         'tiktoken', 'torch', 'regex', 'tqdm'
     ],
     'excludes': ['matplotlib', 'tkinter', 'PyQt5', 'wx', 'test', 'sphinx', 'sqlalchemy', 'pandas', 'pygame'],
-    'dylibs': [PORTAUDIO_LIB],  # Use dylibs instead of frameworks
+    'include_plugins': ['audio'],  # Include audio plugins directory
     'resources': ['src/assets'],
+    'frameworks': [PORTAUDIO_LIB],  # Include as framework
     'dylib_excludes': ['libgfortran.3.dylib', 'libquadmath.0.dylib', 'libgcc_s.1.dylib'],
     'strip': True,
     'plist': {
