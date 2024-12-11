@@ -10,17 +10,24 @@ DATA_FILES = [
     ('assets', ['src/assets/AppIcon.icns']),
 ]
 
-# Simplified package structure to avoid recursion
+# Framework configuration
+PORTAUDIO_FRAMEWORK = 'PortAudio.framework'
+
+# Minimal package configuration to avoid recursion
 OPTIONS = {
     'argv_emulation': False,
     'iconfile': 'src/assets/AppIcon.icns',
-    'packages': ['pyaudio'],
-    'includes': ['numpy', 'torch', 'whisper', 'rubicon.objc'],
+    'includes': [
+        'numpy.core.multiarray',  # Explicit numpy import
+        'torch.nn',  # Minimal torch import
+        'whisper',
+        'rubicon.objc',
+        'pyaudio'
+    ],
     'excludes': ['matplotlib', 'tkinter', 'PyQt5', 'wx', 'test'],
     'strip': True,
     'optimize': 2,
-    'dylib_excludes': ['libportaudio.2.dylib'],  # Exclude from automatic detection
-    'frameworks': ['lib/libportaudio.2.dylib'],  # Explicitly include our copy
+    'frameworks': [PORTAUDIO_FRAMEWORK] if os.path.exists(PORTAUDIO_FRAMEWORK) else [],
     'plist': {
         'CFBundleName': 'TalkToMe',
         'CFBundleDisplayName': 'TalkToMe',
