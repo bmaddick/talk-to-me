@@ -31,6 +31,15 @@ if not os.path.exists(PORTAUDIO_LIB):
 
 print(f"Using PortAudio library at: {PORTAUDIO_LIB}")
 
+# Create site-packages directory if it doesn't exist
+site_packages = os.path.join('build', 'lib', 'site-packages')
+os.makedirs(site_packages, exist_ok=True)
+
+# Copy PortAudio library to site-packages
+lib_dest = os.path.join(site_packages, 'libportaudio.2.dylib')
+shutil.copy2(PORTAUDIO_LIB, lib_dest)
+os.chmod(lib_dest, 0o755)
+
 OPTIONS = {
     'argv_emulation': False,
     'iconfile': 'src/assets/AppIcon.icns',
@@ -43,9 +52,9 @@ OPTIONS = {
         'tiktoken', 'torch', 'regex', 'tqdm'
     ],
     'excludes': ['matplotlib', 'tkinter', 'PyQt5', 'wx', 'test', 'sphinx', 'sqlalchemy', 'pandas', 'pygame'],
-    'include_plugins': ['audio'],  # Include audio plugins directory
+    'site_packages': True,  # Include site-packages directory
     'resources': ['src/assets'],
-    'frameworks': [PORTAUDIO_LIB],  # Include as framework
+    'includes': ['pyaudio._portaudio'],  # Explicitly include portaudio module
     'dylib_excludes': ['libgfortran.3.dylib', 'libquadmath.0.dylib', 'libgcc_s.1.dylib'],
     'strip': True,
     'plist': {
