@@ -4,6 +4,10 @@ from setuptools import setup
 
 sys.setrecursionlimit(5000)
 
+# Ensure framework directory exists
+framework_dir = os.path.join(os.getcwd(), 'build', 'frameworks')
+os.makedirs(framework_dir, exist_ok=True)
+
 APP = ['src/main.py']
 DATA_FILES = [
     ('assets', ['src/assets/AppIcon.icns', 'src/assets/background.png'])
@@ -18,7 +22,10 @@ OPTIONS = {
     'resources': ['src/assets'],
     'strip': True,
     'recipe_plugins': ['src.recipes'],
-    'frameworks': [],  # Let the recipe handle the framework
+    'frameworks': [os.path.join(framework_dir, 'libportaudio.2.dylib.framework')],
+    'dylib_excludes': ['libportaudio.2.dylib'],  # Prevent py2app from searching for the raw dylib
+    'site_packages': True,
+    'python_path': sys.path,
     'plist': {
         'CFBundleName': 'TalkToMe',
         'CFBundleDisplayName': 'TalkToMe',

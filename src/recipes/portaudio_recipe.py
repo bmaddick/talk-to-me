@@ -45,29 +45,33 @@ def check(cmd, mf):
 
     print(f"Using PortAudio library: {portaudio_lib}")
 
-    # Create a proper framework bundle structure
-    framework_dir = os.path.join(os.getcwd(), 'build', 'frameworks')
+    # Create framework structure that py2app expects
     framework_name = 'libportaudio.2.dylib.framework'
+    framework_dir = os.path.join(os.getcwd(), 'build', 'frameworks')
     framework_path = os.path.join(framework_dir, framework_name)
     versions_dir = os.path.join(framework_path, 'Versions', 'A')
     lib_path = os.path.join(versions_dir, 'libportaudio.2.dylib')
 
-    # Create the framework directory structure
+    # Create framework directory structure
     os.makedirs(versions_dir, exist_ok=True)
 
-    # Copy the library to the framework
+    # Copy and configure library
     if not os.path.exists(lib_path):
         subprocess.run(['cp', portaudio_lib, lib_path], check=True)
         subprocess.run(['chmod', '+x', lib_path], check=True)
 
-        # Create symlinks
-        os.symlink('A', os.path.join(framework_path, 'Versions', 'Current'))
-        os.symlink(
-            os.path.join('Versions', 'Current', 'libportaudio.2.dylib'),
-            os.path.join(framework_path, 'libportaudio.2.dylib')
-        )
+        # Create framework symlinks
+        os.chdir(os.path.join(framework_path, 'Versions'))
+        if not os.path.exists('Current'):
+            os.symlink('A', 'Current')
 
-        # Update install names
+        os.chdir(framework_path)
+        if not os.path.exists('libportaudio.2.dylib'):
+            os.symlink('Versions/Current/libportaudio.2.dylib', 'libportaudio.2.dylib')
+
+        os.chdir(os.path.dirname(os.path.dirname(framework_path)))
+
+        # Update install name
         subprocess.run([
             'install_name_tool', '-id',
             '@executable_path/../Frameworks/libportaudio.2.dylib.framework/Versions/A/libportaudio.2.dylib',
@@ -75,6 +79,5 @@ def check(cmd, mf):
         ], check=True)
 
     return dict(
-        frameworks=[framework_path],
-        resources=[framework_path]
+        frameworks=[framework_path]
     )
