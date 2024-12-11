@@ -19,10 +19,6 @@ OPTIONS = {
     'excludes': ['matplotlib', 'tkinter', 'PyQt5', 'wx', 'test', 'sphinx', 'sqlalchemy', 'pandas', 'pygame'],
     'frameworks': [
         'build/frameworks/libportaudio.2.dylib',  # Use relative path to copied library
-        '/System/Library/Frameworks/CoreAudio.framework',
-        '/System/Library/Frameworks/AudioToolbox.framework',
-        '/System/Library/Frameworks/AVFoundation.framework',
-        '/System/Library/Frameworks/ApplicationServices.framework'
     ],
     'resources': ['src/assets'],
     'dylib_excludes': ['libgfortran.3.dylib', 'libquadmath.0.dylib', 'libgcc_s.1.dylib'],
