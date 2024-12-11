@@ -8,12 +8,11 @@ from setuptools import setup
 APP = ['src/main.py']
 DATA_FILES = [('assets', ['src/assets/AppIcon.icns', 'src/assets/background.png'])]
 
-# Use bundled PortAudio library
-FRAMEWORKS_DIR = os.path.join('build', 'frameworks')
-PORTAUDIO_LIB = os.path.join(FRAMEWORKS_DIR, 'libportaudio.2.dylib')
+# Use the library from our lib directory
+PORTAUDIO_LIB = os.path.join('lib', 'libportaudio.2.dylib')
 
 if not os.path.exists(PORTAUDIO_LIB):
-    raise ValueError(f"Bundled PortAudio library not found at {PORTAUDIO_LIB}. Run bundle_libraries.sh first.")
+    raise ValueError(f"PortAudio library not found at {PORTAUDIO_LIB}. Run bundle_libraries.sh first.")
 
 print(f"Using bundled PortAudio library at: {PORTAUDIO_LIB}")
 
@@ -29,7 +28,7 @@ OPTIONS = {
         'tiktoken', 'torch', 'regex', 'tqdm'
     ],
     'excludes': ['matplotlib', 'tkinter', 'PyQt5', 'wx', 'test', 'sphinx', 'sqlalchemy', 'pandas', 'pygame'],
-    'frameworks': [PORTAUDIO_LIB],  # Include the bundled library
+    'dylibs': [PORTAUDIO_LIB],  # Include the library as a dylib
     'resources': ['src/assets'],
     'dylib_excludes': ['libgfortran.3.dylib', 'libquadmath.0.dylib', 'libgcc_s.1.dylib'],
     'strip': True,  # Strip debug symbols to reduce size
