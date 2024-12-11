@@ -7,8 +7,8 @@ a = Analysis(
     pathex=[],
     binaries=[],
     datas=[
-        ('src/assets/AppIcon.icns', 'assets'),
-        ('src/assets/AppIcon.icns', '.')  # Also copy to root for rumps
+        ('src/assets/AppIcon.png', 'assets'),
+        ('src/assets/AppIcon.png', '.')  # Also copy to root for rumps
     ],
     hiddenimports=['pyaudio', 'whisper', 'pynput', 'rumps'],
     hookspath=[],
@@ -39,7 +39,7 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon='src/assets/AppIcon.icns'
+    icon='src/assets/AppIcon.png'
 )
 
 coll = COLLECT(
@@ -56,7 +56,7 @@ coll = COLLECT(
 app = BUNDLE(
     coll,
     name='TalkToMe.app',
-    icon='src/assets/AppIcon.icns',
+    icon='src/assets/AppIcon.png',
     bundle_identifier='com.bmaddick.talktome',
     info_plist={
         'LSUIElement': True,  # Makes it a menu bar app
