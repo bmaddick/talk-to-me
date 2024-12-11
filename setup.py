@@ -8,14 +8,14 @@ from setuptools import setup
 APP = ['src/main.py']
 DATA_FILES = [('assets', ['src/assets/AppIcon.icns', 'src/assets/background.png'])]
 
-# Get PortAudio path from environment and ensure it exists
-PORTAUDIO_PREFIX = os.environ.get('PORTAUDIO_PATH', '/opt/homebrew/opt/portaudio')
-PORTAUDIO_LIB = os.path.join('build', 'libportaudio.2.dylib')  # Use prepared library
+# Use bundled PortAudio library
+FRAMEWORKS_DIR = os.path.join('build', 'frameworks')
+PORTAUDIO_LIB = os.path.join(FRAMEWORKS_DIR, 'libportaudio.2.dylib')
 
 if not os.path.exists(PORTAUDIO_LIB):
-    raise ValueError(f"PortAudio library not found at {PORTAUDIO_LIB}")
+    raise ValueError(f"Bundled PortAudio library not found at {PORTAUDIO_LIB}. Run bundle_libraries.sh first.")
 
-print(f"Found PortAudio library at: {PORTAUDIO_LIB}")
+print(f"Using bundled PortAudio library at: {PORTAUDIO_LIB}")
 
 OPTIONS = {
     'argv_emulation': False,  # Disable argv emulation for better Mac integration
@@ -29,7 +29,7 @@ OPTIONS = {
         'tiktoken', 'torch', 'regex', 'tqdm'
     ],
     'excludes': ['matplotlib', 'tkinter', 'PyQt5', 'wx', 'test', 'sphinx', 'sqlalchemy', 'pandas', 'pygame'],
-    'frameworks': [PORTAUDIO_LIB],  # Include prepared PortAudio library
+    'frameworks': [PORTAUDIO_LIB],  # Include the bundled library
     'resources': ['src/assets'],
     'dylib_excludes': ['libgfortran.3.dylib', 'libquadmath.0.dylib', 'libgcc_s.1.dylib'],
     'strip': True,  # Strip debug symbols to reduce size

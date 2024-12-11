@@ -49,23 +49,20 @@ jobs:
         python -m pip install --use-pep517 py2app
         echo "Installed Python dependencies successfully"
 
-    - name: Prepare PortAudio
+    - name: Prepare Libraries
       run: |
-        chmod +x prepare_portaudio.sh
-        ./prepare_portaudio.sh
-
-        # Double check framework structure
-        ls -l build/libportaudio.2.dylib.framework/
-        otool -L build/libportaudio.2.dylib.framework/libportaudio.2.dylib
+        chmod +x bundle_libraries.sh
+        ./bundle_libraries.sh
+        ls -la build/frameworks/
+        otool -L build/frameworks/libportaudio.2.dylib
+        echo "Libraries prepared successfully"
 
     - name: Build App
       run: |
         # Set environment variables
-        PORTAUDIO_PREFIX=$(brew --prefix portaudio)
-        export DYLD_LIBRARY_PATH="$PORTAUDIO_PREFIX/lib:$DYLD_LIBRARY_PATH"
-        export LIBRARY_PATH="$PORTAUDIO_PREFIX/lib:$LIBRARY_PATH"
-        export PKG_CONFIG_PATH="$PORTAUDIO_PREFIX/lib/pkgconfig:$PKG_CONFIG_PATH"
-        export PORTAUDIO_PATH="$PORTAUDIO_PREFIX"
+        export DYLD_LIBRARY_PATH="$PWD/build/frameworks:$DYLD_LIBRARY_PATH"
+        export LIBRARY_PATH="$PWD/build/frameworks:$LIBRARY_PATH"
+        export PKG_CONFIG_PATH="$(brew --prefix portaudio)/lib/pkgconfig:$PKG_CONFIG_PATH"
 
         # Build with verbose output
         python setup.py py2app -v
