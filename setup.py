@@ -1,10 +1,22 @@
 import sys
+import os
+import shutil
 sys.setrecursionlimit(5000)  # Increase recursion limit for py2app
 
 from setuptools import setup
 
 APP = ['src/main.py']
-DATA_FILES = [('assets', ['src/assets/AppIcon.icns', 'src/assets/background.png'])]
+DATA_FILES = [
+    ('assets', ['src/assets/AppIcon.icns', 'src/assets/background.png']),
+    ('Frameworks', ['Frameworks/libportaudio.2.dylib'])  # Include PortAudio in Frameworks
+]
+
+# Verify PortAudio framework exists
+if not os.path.exists('Frameworks/libportaudio.2.dylib'):
+    raise ValueError("PortAudio framework not found. Run prepare_frameworks.sh first.")
+
+print("Using PortAudio framework from: Frameworks/libportaudio.2.dylib")
+
 OPTIONS = {
     'argv_emulation': False,  # Disable argv emulation for better Mac integration
     'iconfile': 'src/assets/AppIcon.icns',
@@ -17,13 +29,7 @@ OPTIONS = {
         'tiktoken', 'torch', 'regex', 'tqdm'
     ],
     'excludes': ['matplotlib', 'tkinter', 'PyQt5', 'wx', 'test', 'sphinx', 'sqlalchemy', 'pandas', 'pygame'],
-    'frameworks': [
-        'build/frameworks/libportaudio.2.dylib',  # Use our bundled copy
-        '/System/Library/Frameworks/CoreAudio.framework',
-        '/System/Library/Frameworks/AudioToolbox.framework',
-        '/System/Library/Frameworks/AVFoundation.framework',
-        '/System/Library/Frameworks/ApplicationServices.framework'
-    ],
+    'frameworks': ['Frameworks/libportaudio.2.dylib'],  # Use frameworks option
     'resources': ['src/assets'],
     'dylib_excludes': ['libgfortran.3.dylib', 'libquadmath.0.dylib', 'libgcc_s.1.dylib'],
     'strip': True,  # Strip debug symbols to reduce size
@@ -32,8 +38,8 @@ OPTIONS = {
         'CFBundleDisplayName': 'TalkToMe',
         'CFBundleGetInfoString': "Voice to text for any application",
         'CFBundleIdentifier': "com.bmaddick.talktome",
-        'CFBundleVersion': "0.1.9",
-        'CFBundleShortVersionString': "0.1.9",
+        'CFBundleVersion': "1.0.0",
+        'CFBundleShortVersionString': "1.0.0",
         'LSMinimumSystemVersion': '10.13.0',  # Minimum macOS version
         'NSMicrophoneUsageDescription': 'TalkToMe needs microphone access to convert your speech to text.',
         'NSAppleEventsUsageDescription': 'TalkToMe needs accessibility access to type text in any application.',
