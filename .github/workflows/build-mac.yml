@@ -30,6 +30,8 @@ jobs:
         cp $(brew --prefix portaudio)/lib/libportaudio.2.dylib lib/
         # Fix library install name and verify
         install_name_tool -id "@rpath/libportaudio.2.dylib" lib/libportaudio.2.dylib
+        # Add rpath to library
+        install_name_tool -add_rpath "@executable_path/." lib/libportaudio.2.dylib
         otool -L lib/libportaudio.2.dylib
         echo "Copied library location:"
         ls -la lib/
@@ -40,7 +42,7 @@ jobs:
         pip install pyinstaller pyaudio
         pip install -r requirements.txt
         # Debug PyAudio installation
-        python -c "import pyaudio; print('PyAudio version:', pyaudio.__version__)"
+        python -c "import pyaudio; print('PyAudio version:', pyaudio.__version__); print('PyAudio _portaudio:', pyaudio._portaudio.__file__)"
 
     - name: Build App
       run: |
@@ -56,11 +58,17 @@ jobs:
         cat > TalkToMe.spec << EOL
         # -*- mode: python ; coding: utf-8 -*-
         import os
+        from PyInstaller.utils.hooks import collect_dynamic_libs
+
         block_cipher = None
+
+        # Collect PortAudio library
+        portaudio_bins = [('lib/libportaudio.2.dylib', '.')]
+
         a = Analysis(
             ['src/main.py'],
             pathex=[os.getcwd()],
-            binaries=[('lib/libportaudio.2.dylib', '.')],
+            binaries=portaudio_bins,
             datas=[],
             hiddenimports=['pyaudio', 'numpy.core.multiarray', 'whisper'],
             hookspath=[],
