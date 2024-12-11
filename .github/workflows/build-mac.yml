@@ -52,12 +52,11 @@ jobs:
         rm -rf src/assets
         mkdir -p src/assets
 
-        # Create a white background for DMG using sips
-        mkdir -p src/assets
-        touch src/assets/background.png
-        sips -s format png src/assets/background.png --out src/assets/background.png
-        sips -z 400 800 src/assets/background.png
-        sips -s format png -s formatOptions 100 src/assets/background.png
+        # Create a simple white background image
+        echo "P3\n800 400\n255\n" > src/assets/background.ppm
+        for i in {1..320000}; do echo "255 255 255"; done >> src/assets/background.ppm
+        sips -s format png src/assets/background.ppm --out src/assets/background.png
+        rm src/assets/background.ppm
 
         # Use system app icon
         cp /System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/GenericApplicationIcon.icns src/assets/AppIcon.icns
