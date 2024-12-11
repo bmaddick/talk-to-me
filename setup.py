@@ -66,8 +66,8 @@ OPTIONS = {
     'excludes': ['matplotlib', 'tkinter', 'PyQt5', 'wx', 'test'],
     'resources': ['src/assets'],
     'strip': True,
-    'dylib_excludes': ['libportaudio.2.dylib.framework'],
     'site_packages': True,
+    'dylib_excludes': ['libportaudio.2.dylib.framework'],
     'plist': {
         'CFBundleName': 'TalkToMe',
         'CFBundleDisplayName': 'TalkToMe',
