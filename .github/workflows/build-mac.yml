@@ -24,21 +24,22 @@ jobs:
         PORTAUDIO_PREFIX=$(brew --prefix portaudio)
         PORTAUDIO_LIB="$PORTAUDIO_PREFIX/lib/libportaudio.2.dylib"
 
+        # Debug PortAudio installation
+        echo "PortAudio prefix: $PORTAUDIO_PREFIX"
+        ls -l "$PORTAUDIO_PREFIX/lib"
+        otool -L "$PORTAUDIO_LIB"
+
         # Create lib directory and copy PortAudio
         mkdir -p lib
         cp "$PORTAUDIO_LIB" lib/
         chmod 644 lib/libportaudio.2.dylib
 
         # Fix library install name and add rpath
-        install_name_tool -id "@rpath/libportaudio.2.dylib" lib/libportaudio.2.dylib
-        install_name_tool -add_rpath "@executable_path/../lib" lib/libportaudio.2.dylib
+        install_name_tool -id "@executable_path/../lib/libportaudio.2.dylib" lib/libportaudio.2.dylib
 
         # Set environment variables
         echo "PORTAUDIO_LIB=$PWD/lib/libportaudio.2.dylib" >> $GITHUB_ENV
         echo "DYLD_LIBRARY_PATH=$PWD/lib:$DYLD_LIBRARY_PATH" >> $GITHUB_ENV
-
-        # Debug information
-        otool -L lib/libportaudio.2.dylib
 
     - name: Install Dependencies
       run: |
