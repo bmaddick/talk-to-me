@@ -4,5 +4,5 @@ PyAutoGUI==0.9.54
 pyobjc-core>=10.0; platform_system=="Darwin"
 pyobjc>=10.0; platform_system=="Darwin"
 rubicon-objc>=0.4.7; platform_system=="Darwin"
-py2app>=0.28.6; platform_system=="Darwin"
+pyinstaller>=6.3.0; platform_system=="Darwin"
 setuptools>=65.5.1
