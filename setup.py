@@ -1,41 +1,31 @@
 import sys
 import os
 import subprocess
-import shutil
 from setuptools import setup
 
 sys.setrecursionlimit(5000)
 
-# Get PortAudio library path and copy to a known location
+# Get PortAudio library path from Homebrew
 try:
-    portaudio_lib = subprocess.check_output(['brew', '--prefix', 'portaudio']).decode().strip()
-    source_lib = os.path.join(portaudio_lib, 'lib', 'libportaudio.2.dylib')
-    lib_dir = os.path.join(os.getcwd(), 'lib')
-    os.makedirs(lib_dir, exist_ok=True)
-    dest_lib = os.path.join(lib_dir, 'libportaudio.2.dylib')
-    if os.path.exists(source_lib):
-        shutil.copy2(source_lib, dest_lib)
-        os.chmod(dest_lib, 0o755)
-    portaudio_lib = dest_lib
-except Exception as e:
-    print(f"Warning: Error copying PortAudio library: {e}")
+    brew_prefix = subprocess.check_output(['brew', '--prefix']).decode().strip()
+    portaudio_lib = os.path.join(brew_prefix, 'opt', 'portaudio', 'lib', 'libportaudio.2.dylib')
+except:
     portaudio_lib = '/usr/local/lib/libportaudio.2.dylib'
 
 APP = ['src/main.py']
 DATA_FILES = [
-    ('assets', ['src/assets/AppIcon.icns', 'src/assets/background.png']),
-    ('lib', [portaudio_lib])
+    ('assets', ['src/assets/AppIcon.icns', 'src/assets/background.png'])
 ]
 
 OPTIONS = {
     'argv_emulation': False,
     'iconfile': 'src/assets/AppIcon.icns',
     'packages': ['numpy', 'whisper', 'pyaudio', 'tiktoken', 'torch'],
-    'includes': ['numpy', 'whisper', 'pyautogui'],
+    'includes': ['numpy', 'whisper', 'pyautogui', 'pyaudio._portaudio'],
     'excludes': ['matplotlib', 'tkinter', 'PyQt5', 'wx', 'test'],
     'resources': ['src/assets'],
     'strip': True,
-    'frameworks': [],
+    'dylibs': [portaudio_lib],
     'site_packages': True,
     'plist': {
         'CFBundleName': 'TalkToMe',
