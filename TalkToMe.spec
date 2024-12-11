@@ -10,7 +10,7 @@ a = Analysis(
         ('src/assets/AppIcon.png', 'assets'),
         ('src/assets/AppIcon.png', '.')  # Also copy to root for rumps
     ],
-    hiddenimports=['pyaudio', 'whisper', 'pynput', 'rumps'],
+    hiddenimports=['pyaudio', 'whisper', 'pynput', 'rumps', 'PIL', 'PIL._tkinter', 'PIL._imaging'],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
@@ -29,11 +29,11 @@ exe = EXE(
     [],
     exclude_binaries=True,
     name='TalkToMe',
-    debug=False,
+    debug=True,  # Enable debug mode for better error reporting
     bootloader_ignore_signals=False,
     strip=False,
     upx=True,
-    console=False,
+    console=True,  # Enable console for debugging
     disable_windowed_traceback=False,
     argv_emulation=True,
     target_arch=None,
@@ -63,5 +63,9 @@ app = BUNDLE(
         'NSMicrophoneUsageDescription': 'TalkToMe needs microphone access to convert your speech to text.',
         'NSAppleEventsUsageDescription': 'TalkToMe needs accessibility access to type text into applications.',
         'CFBundleShortVersionString': '1.0.0',
+        'LSBackgroundOnly': False,  # Ensure app is not background-only
+        'NSHighResolutionCapable': True,
+        'NSRequiresAquaSystemAppearance': False,
+        'NSSupportsAutomaticGraphicsSwitching': True,
     }
 )
