@@ -30,11 +30,8 @@ jobs:
         cp -v "$PORTAUDIO_LIB" lib/
         chmod 755 lib/libportaudio.2.dylib
 
-        # Fix library install name
-        install_name_tool -id "@executable_path/../Frameworks/libportaudio.2.dylib" lib/libportaudio.2.dylib
-
         # Debug output
-        echo "PortAudio library details:"
+        echo "Library details:"
         otool -L lib/libportaudio.2.dylib
 
     - name: Install Dependencies
