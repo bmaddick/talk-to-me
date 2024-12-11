@@ -9,7 +9,8 @@ def get_portaudio_path():
     try:
         result = subprocess.run(['brew', '--prefix', 'portaudio'],
                               capture_output=True, text=True, check=True)
-        lib_path = os.path.join(result.stdout.strip(), 'lib', 'libportaudio.2.dylib')
+        prefix = result.stdout.strip()
+        lib_path = os.path.join(prefix, 'lib', 'libportaudio.2.dylib')
         if not os.path.exists(lib_path):
             raise ValueError(f"PortAudio library not found at {lib_path}")
         return lib_path
@@ -17,24 +18,24 @@ def get_portaudio_path():
         print(f"Error finding PortAudio: {e}")
         return None
 
-PORTAUDIO_PATH = get_portaudio_path()
-if not PORTAUDIO_PATH:
-    raise ValueError("PortAudio library not found. Please install with 'brew install portaudio'")
+PORTAUDIO_LIB = get_portaudio_path()
+if not PORTAUDIO_LIB:
+    raise ValueError("PortAudio not found. Install with 'brew install portaudio'")
 
 APP = ['src/main.py']
 DATA_FILES = [
-    ('assets', ['src/assets/AppIcon.icns', 'src/assets/background.png']),
+    ('assets', ['src/assets/AppIcon.icns', 'src/assets/background.png'])
 ]
 
 OPTIONS = {
     'argv_emulation': False,
     'iconfile': 'src/assets/AppIcon.icns',
     'packages': ['numpy', 'whisper', 'pyaudio', 'tiktoken', 'torch'],
-    'includes': ['numpy', 'whisper', 'pyautogui', 'pyaudio._portaudio'],
+    'includes': ['numpy', 'whisper', 'pyautogui'],
     'excludes': ['matplotlib', 'tkinter', 'PyQt5', 'wx', 'test'],
     'resources': ['src/assets'],
+    'frameworks': [PORTAUDIO_LIB],
     'strip': True,
-    'dylib_excludes': ['libportaudio.2.dylib'],
     'plist': {
         'CFBundleName': 'TalkToMe',
         'CFBundleDisplayName': 'TalkToMe',
