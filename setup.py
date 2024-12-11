@@ -6,14 +6,16 @@ from setuptools import setup
 
 def find_portaudio():
     """Find the PortAudio library."""
-    possible_paths = [
-        os.path.join('lib', 'libportaudio.2.dylib'),
-        os.path.join('lib', 'libportaudio.2.dylib.framework', 'Versions', 'A', 'libportaudio.2.dylib')
-    ]
-    for path in possible_paths:
-        if os.path.exists(path):
-            print(f"Found PortAudio at: {path}")
-            return path
+    framework_path = os.path.join('lib', 'libportaudio.2.dylib.framework')
+    if os.path.exists(framework_path):
+        dylib_path = os.path.join(framework_path, 'libportaudio.2.dylib')
+        if os.path.exists(dylib_path):
+            print(f"Found PortAudio at: {dylib_path}")
+            return dylib_path
+        version_path = os.path.join(framework_path, 'Versions', 'A', 'libportaudio.2.dylib')
+        if os.path.exists(version_path):
+            print(f"Found PortAudio at: {version_path}")
+            return version_path
     raise ValueError("PortAudio library not found")
 
 PORTAUDIO_LIB = find_portaudio()
@@ -21,7 +23,6 @@ PORTAUDIO_LIB = find_portaudio()
 APP = ['src/main.py']
 DATA_FILES = [
     ('assets', ['src/assets/AppIcon.icns']),
-    ('lib', [PORTAUDIO_LIB]),
 ]
 
 OPTIONS = {
@@ -35,6 +36,7 @@ OPTIONS = {
     'optimize': 2,
     'frameworks': [PORTAUDIO_LIB],
     'dylib_excludes': [],
+    'site_packages': True,
     'plist': {
         'CFBundleName': 'TalkToMe',
         'CFBundleDisplayName': 'TalkToMe',
