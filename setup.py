@@ -6,16 +6,10 @@ from setuptools import setup
 
 def find_portaudio():
     """Find the PortAudio library."""
-    framework_path = os.path.join('lib', 'libportaudio.2.dylib.framework')
-    if os.path.exists(framework_path):
-        dylib_path = os.path.join(framework_path, 'libportaudio.2.dylib')
-        if os.path.exists(dylib_path):
-            print(f"Found PortAudio at: {dylib_path}")
-            return dylib_path
-        version_path = os.path.join(framework_path, 'Versions', 'A', 'libportaudio.2.dylib')
-        if os.path.exists(version_path):
-            print(f"Found PortAudio at: {version_path}")
-            return version_path
+    lib_path = os.path.join('lib', 'libportaudio.2.dylib')
+    if os.path.exists(lib_path):
+        print(f"Found PortAudio at: {lib_path}")
+        return lib_path
     raise ValueError("PortAudio library not found")
 
 PORTAUDIO_LIB = find_portaudio()
