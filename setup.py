@@ -5,12 +5,16 @@ from setuptools import setup
 
 sys.setrecursionlimit(5000)
 
-# Get PortAudio library path from Homebrew
+# Get PortAudio library path
 try:
-    brew_prefix = subprocess.check_output(['brew', '--prefix']).decode().strip()
-    portaudio_lib = os.path.join(brew_prefix, 'opt', 'portaudio', 'lib', 'libportaudio.2.dylib')
+    portaudio_lib = os.path.join(os.getcwd(), 'lib', 'libportaudio.2.dylib')
+    if not os.path.exists(portaudio_lib):
+        brew_prefix = subprocess.check_output(['brew', '--prefix', 'portaudio']).decode().strip()
+        portaudio_lib = os.path.join(brew_prefix, 'lib', 'libportaudio.2.dylib')
 except:
     portaudio_lib = '/usr/local/lib/libportaudio.2.dylib'
+
+print(f"Using PortAudio library: {portaudio_lib}")
 
 APP = ['src/main.py']
 DATA_FILES = [
@@ -25,7 +29,7 @@ OPTIONS = {
     'excludes': ['matplotlib', 'tkinter', 'PyQt5', 'wx', 'test'],
     'resources': ['src/assets'],
     'strip': True,
-    'dylibs': [portaudio_lib],
+    'frameworks': [portaudio_lib] if os.path.exists(portaudio_lib) else [],
     'site_packages': True,
     'plist': {
         'CFBundleName': 'TalkToMe',
