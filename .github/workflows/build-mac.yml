@@ -18,86 +18,47 @@ jobs:
       with:
         python-version: '3.11'
 
-    - name: Install and Configure PortAudio
+    - name: Prepare PortAudio Library
       run: |
-        # Install PortAudio
-        brew install portaudio
-        PORTAUDIO_PREFIX=$(brew --prefix portaudio)
-        PORTAUDIO_LIB="$PORTAUDIO_PREFIX/lib/libportaudio.2.dylib"
-
-        # Create lib directory and copy PortAudio
-        mkdir -p lib
-        cp -v "$PORTAUDIO_LIB" lib/
-        chmod 755 lib/libportaudio.2.dylib
-
-        # Debug output
-        echo "Library details:"
-        otool -L lib/libportaudio.2.dylib
+        chmod +x prepare_library.sh
+        ./prepare_library.sh
+        source env.sh
 
     - name: Install Dependencies
       run: |
         python -m pip install --upgrade pip setuptools wheel
         pip install --use-pep517 rubicon-objc py2app
 
-        # Set environment variables for PyAudio installation
-        export PORTAUDIO_PATH="$PWD/lib"
-        export DYLD_LIBRARY_PATH="$PORTAUDIO_PATH:$DYLD_LIBRARY_PATH"
-        export LIBRARY_PATH="$PORTAUDIO_PATH:$LIBRARY_PATH"
-        export CFLAGS="-I$(brew --prefix portaudio)/include"
-        export LDFLAGS="-L$PORTAUDIO_PATH"
-
-        # Install PyAudio with verbose output
-        DYLD_LIBRARY_PATH="$PORTAUDIO_PATH" pip install --verbose pyaudio
+        # Install PyAudio with prepared PortAudio
+        pip install --no-cache-dir pyaudio
 
         # Install remaining dependencies
         pip install -r requirements.txt
 
     - name: Build App
       run: |
+        # Clean previous builds
         rm -rf dist build
 
-        # Set library paths
-        export DYLD_LIBRARY_PATH="$PWD/lib:$DYLD_LIBRARY_PATH"
-        export LIBRARY_PATH="$PWD/lib:$LIBRARY_PATH"
+        # Source environment variables
+        source env.sh
 
         # Build with verbose output
         python setup.py py2app -vv
 
-        # Create frameworks directory and copy library
-        mkdir -p dist/TalkToMe.app/Contents/Frameworks
-        cp -v lib/libportaudio.2.dylib dist/TalkToMe.app/Contents/Frameworks/
-        chmod 755 dist/TalkToMe.app/Contents/Frameworks/libportaudio.2.dylib
-
-        # Fix library references
-        echo "Fixing library references..."
-        find dist/TalkToMe.app -type f -name "*.so" -o -name "*.dylib" | while read lib; do
-          echo "Processing $lib"
-          otool -L "$lib"
-          install_name_tool -change "lib/libportaudio.2.dylib" \
-            "@executable_path/../Frameworks/libportaudio.2.dylib" "$lib" || true
-          install_name_tool -change "$PWD/lib/libportaudio.2.dylib" \
-            "@executable_path/../Frameworks/libportaudio.2.dylib" "$lib" || true
-          echo "After processing:"
-          otool -L "$lib"
-        done
+        # Debug output
+        echo "App bundle contents:"
+        ls -R dist/TalkToMe.app/Contents/
+        echo "Library references in binary:"
+        otool -L dist/TalkToMe.app/Contents/MacOS/TalkToMe
 
     - name: Create DMG
       run: |
-        brew install create-dmg
-        create-dmg \
-          --volname "TalkToMe" \
-          --volicon "src/assets/AppIcon.icns" \
-          --window-pos 200 120 \
-          --window-size 800 400 \
-          --icon-size 100 \
-          --icon "TalkToMe.app" 200 190 \
-          --hide-extension "TalkToMe.app" \
-          --app-drop-link 600 185 \
-          "TalkToMe.dmg" \
-          "dist/TalkToMe.app"
+        chmod +x create_dmg.sh
+        ./create_dmg.sh
 
     - name: Upload Artifacts
       uses: actions/upload-artifact@v3
       with:
-        name: TalkToMe
+        name: TalkToMe-DMG
         path: TalkToMe.dmg
