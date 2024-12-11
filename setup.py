@@ -7,29 +7,29 @@ from setuptools import setup
 
 APP = ['src/main.py']
 DATA_FILES = [
-    ('assets', ['src/assets/AppIcon.icns', 'src/assets/background.png']),
-    ('Frameworks', ['Frameworks/libportaudio.2.dylib'])  # Include PortAudio in Frameworks
+    ('assets', ['src/assets/AppIcon.icns', 'src/assets/background.png'])
 ]
 
-# Verify PortAudio framework exists
-if not os.path.exists('Frameworks/libportaudio.2.dylib'):
-    raise ValueError("PortAudio framework not found. Run prepare_frameworks.sh first.")
+# Get PortAudio path from environment or use default Homebrew location
+PORTAUDIO_PATH = os.getenv('PORTAUDIO_PATH', '/opt/homebrew/opt/portaudio')
 
-print("Using PortAudio framework from: Frameworks/libportaudio.2.dylib")
+# Framework path in the app bundle
+FRAMEWORKS_PATH = 'Frameworks'
+os.makedirs(FRAMEWORKS_PATH, exist_ok=True)
 
 OPTIONS = {
     'argv_emulation': False,  # Disable argv emulation for better Mac integration
     'iconfile': 'src/assets/AppIcon.icns',
     'packages': [
-        'numpy', 'whisper', 'pyaudio', 'openai_whisper', 'tiktoken', 'torch',
+        'numpy', 'whisper', 'pyaudio', 'tiktoken', 'torch',
         'regex', 'tqdm', 'more_itertools', 'requests', 'typing_extensions'
     ],
     'includes': [
-        'numpy', 'whisper', 'pyaudio', 'pyautogui', 'openai_whisper',
+        'numpy', 'whisper', 'pyaudio', 'pyautogui',
         'tiktoken', 'torch', 'regex', 'tqdm'
     ],
     'excludes': ['matplotlib', 'tkinter', 'PyQt5', 'wx', 'test', 'sphinx', 'sqlalchemy', 'pandas', 'pygame'],
-    'frameworks': ['Frameworks/libportaudio.2.dylib'],  # Use frameworks option
+    'frameworks': ['Frameworks/libportaudio.2.dylib'],
     'resources': ['src/assets'],
     'dylib_excludes': ['libgfortran.3.dylib', 'libquadmath.0.dylib', 'libgcc_s.1.dylib'],
     'strip': True,  # Strip debug symbols to reduce size

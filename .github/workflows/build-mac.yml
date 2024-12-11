@@ -26,6 +26,7 @@ jobs:
         echo "PORTAUDIO_PATH=$PORTAUDIO_PATH" >> $GITHUB_ENV
         echo "Found PortAudio at: $PORTAUDIO_PATH"
         ls -l $PORTAUDIO_PATH/lib/
+        otool -L $PORTAUDIO_PATH/lib/libportaudio.2.dylib
 
     - name: Create App Assets
       run: |
@@ -51,31 +52,50 @@ jobs:
         python -m pip install --use-pep517 -r requirements.txt
         python -m pip install --use-pep517 py2app
         python -c "import pyaudio; print('PyAudio location:', pyaudio.__file__)"
+        python -c "import whisper; print('Whisper location:', whisper.__file__)"
         echo "Installed Python dependencies successfully"
 
     - name: Prepare Frameworks
       run: |
-        chmod +x prepare_frameworks.sh
-        ./prepare_frameworks.sh
-        echo "Frameworks prepared successfully"
+        # Create Frameworks directory
+        mkdir -p Frameworks
+
+        # Copy PortAudio library
+        cp "$PORTAUDIO_PATH/lib/libportaudio.2.dylib" Frameworks/
+        chmod +x Frameworks/libportaudio.2.dylib
+
+        # Fix install name
+        install_name_tool -id "@executable_path/../Frameworks/libportaudio.2.dylib" Frameworks/libportaudio.2.dylib
+
+        # Verify framework
+        echo "Framework contents:"
         ls -la Frameworks/
+        echo "Library dependencies:"
         otool -L Frameworks/libportaudio.2.dylib
 
     - name: Build App
       run: |
         # Set environment variables
+        PORTAUDIO_PREFIX=$(brew --prefix portaudio)
         export DYLD_LIBRARY_PATH="$PWD/Frameworks:$DYLD_LIBRARY_PATH"
         export LIBRARY_PATH="$PWD/Frameworks:$LIBRARY_PATH"
-        export PKG_CONFIG_PATH="$PORTAUDIO_PATH/lib/pkgconfig:$PKG_CONFIG_PATH"
+        export PKG_CONFIG_PATH="$PORTAUDIO_PREFIX/lib/pkgconfig:$PKG_CONFIG_PATH"
+        export PORTAUDIO_PATH="$PORTAUDIO_PREFIX"
+
+        echo "Environment variables set:"
+        echo "PORTAUDIO_PREFIX: $PORTAUDIO_PREFIX"
+        echo "DYLD_LIBRARY_PATH: $DYLD_LIBRARY_PATH"
+        echo "LIBRARY_PATH: $LIBRARY_PATH"
 
         # Clean previous builds
         rm -rf build dist
 
-        # Build with maximum verbosity
+        # Build with verbose output
         python setup.py py2app -vv
 
         # Verify app bundle structure
-        ls -R dist/TalkToMe.app/Contents/Frameworks/
+        echo "App bundle contents:"
+        ls -R dist/TalkToMe.app/Contents/
 
     - name: Create DMG
       run: |
