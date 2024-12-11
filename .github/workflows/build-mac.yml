@@ -81,7 +81,8 @@ jobs:
 
     - name: Build App and Create DMG
       run: |
-        chmod +x build_mac_app.sh create_dmg.sh
+        chmod +x build_mac_app.sh create_dmg.sh copy_frameworks.sh
+        ./copy_frameworks.sh
         ./build_mac_app.sh
         ./create_dmg.sh
 
