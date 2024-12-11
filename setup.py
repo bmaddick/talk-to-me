@@ -1,5 +1,6 @@
 import sys
 import os
+import site
 from setuptools import setup
 
 sys.setrecursionlimit(5000)
@@ -30,12 +31,9 @@ if not os.path.exists(PORTAUDIO_LIB):
 
 print(f"Using PortAudio library at: {PORTAUDIO_LIB}")
 
-def portaudio_recipe(module, required_imports):
-    """Custom recipe for PyAudio/PortAudio"""
-    return dict(
-        loader_files=[PORTAUDIO_LIB],
-        prescripts=['import os; os.environ["DYLD_LIBRARY_PATH"] = os.path.join(os.environ["RESOURCEPATH"], "..")']
-    )
+# Get site-packages directory
+site_packages = site.getsitepackages()[0]
+pyaudio_path = os.path.join(site_packages, 'pyaudio')
 
 OPTIONS = {
     'argv_emulation': False,
@@ -45,12 +43,12 @@ OPTIONS = {
         'regex', 'tqdm', 'more_itertools', 'requests', 'typing_extensions'
     ],
     'includes': [
-        'numpy', 'whisper', 'pyaudio', 'pyautogui',
+        'numpy', 'whisper', 'pyaudio._portaudio', 'pyautogui',
         'tiktoken', 'torch', 'regex', 'tqdm'
     ],
-    'excludes': ['matplotlib', 'tkinter', 'PyQt5', 'wx', 'test', 'sphinx', 'sqlalchemy', 'pandas', 'pygame'],
-    'recipes': {'pyaudio': portaudio_recipe},  # Use custom recipe for PyAudio
-    'resources': ['src/assets'],
+    'excludes': ['matplotlib', 'tkinter', 'PyQt5', 'wx', 'test'],
+    'resources': ['src/assets', pyaudio_path],
+    'frameworks': [PORTAUDIO_LIB],
     'dylib_excludes': ['libgfortran.3.dylib', 'libquadmath.0.dylib', 'libgcc_s.1.dylib'],
     'strip': True,
     'plist': {

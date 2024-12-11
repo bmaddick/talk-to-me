@@ -25,14 +25,17 @@ jobs:
         PORTAUDIO_PATH=$(brew --prefix portaudio)
         echo "PORTAUDIO_PATH=$PORTAUDIO_PATH" >> $GITHUB_ENV
 
-        # Create loader directory for PortAudio
-        mkdir -p loader
-        cp "$PORTAUDIO_PATH/lib/libportaudio.2.dylib" loader/
-        chmod +x loader/libportaudio.2.dylib
+        # Create frameworks directory
+        mkdir -p Frameworks
+        cp "$PORTAUDIO_PATH/lib/libportaudio.2.dylib" Frameworks/
+        chmod +x Frameworks/libportaudio.2.dylib
 
-        # Fix install name and verify
-        install_name_tool -id "@loader_path/libportaudio.2.dylib" loader/libportaudio.2.dylib
-        otool -L loader/libportaudio.2.dylib
+        # Fix library paths
+        install_name_tool -id "@executable_path/../Frameworks/libportaudio.2.dylib" Frameworks/libportaudio.2.dylib
+
+        # Verify library setup
+        otool -L Frameworks/libportaudio.2.dylib
+        ls -l Frameworks/
 
     - name: Create App Assets
       run: |
@@ -58,32 +61,35 @@ jobs:
         python -m pip install --use-pep517 -r requirements.txt
         python -m pip install --use-pep517 py2app
 
-        # Verify critical dependencies
-        python -c "import pyaudio; print('PyAudio location:', pyaudio.__file__)"
-        python -c "import whisper; print('Whisper location:', whisper.__file__)"
-        python -c "import numpy; print('NumPy location:', numpy.__file__)"
-        python -c "import os; print('Loader path:', os.path.abspath('loader'))"
-
-        echo "Python dependencies installed successfully"
+        # Verify PyAudio installation and paths
+        python -c "
+        import pyaudio, os
+        print('PyAudio version:', pyaudio.__version__)
+        print('PyAudio location:', pyaudio.__file__)
+        print('_portaudio location:', pyaudio._portaudio.__file__)
+        print('Current working directory:', os.getcwd())
+        print('Frameworks directory contents:', os.listdir('Frameworks'))
+        "
 
     - name: Build App
       run: |
-        # Set environment variables for build
-        export DYLD_LIBRARY_PATH="$PWD/loader:$DYLD_LIBRARY_PATH"
-        export LIBRARY_PATH="$PWD/loader:$LIBRARY_PATH"
-        export PYTHONPATH="$PWD:$PYTHONPATH"
+        # Set environment variables
+        export DYLD_LIBRARY_PATH="$PWD/Frameworks:$DYLD_LIBRARY_PATH"
+        export DYLD_FRAMEWORK_PATH="$PWD/Frameworks:$DYLD_FRAMEWORK_PATH"
 
         # Clean previous builds
-        rm -rf dist
+        rm -rf dist build
 
         # Build with verbose output
-        python setup.py py2app -vv
+        PYTHONPATH="$PWD" python setup.py py2app -vv
 
-        # Verify app bundle structure
+        # Copy PortAudio to app bundle
+        mkdir -p dist/TalkToMe.app/Contents/Frameworks
+        cp Frameworks/libportaudio.2.dylib dist/TalkToMe.app/Contents/Frameworks/
+
+        # Verify app bundle
         echo "App bundle contents:"
         ls -R dist/TalkToMe.app/Contents/
-        echo "Frameworks in app bundle:"
-        ls -la dist/TalkToMe.app/Contents/Frameworks/
 
     - name: Create DMG
       run: |
