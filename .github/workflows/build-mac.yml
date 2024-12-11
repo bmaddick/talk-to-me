@@ -45,15 +45,26 @@ jobs:
         # Clean up any existing directories
         rm -rf src/assets AppIcon.iconset
         mkdir -p src/assets
-        # Create a simple blue circle icon
-        convert -size 1024x1024 xc:none \
-          -fill '#0066cc' \
-          -draw 'circle 512,512 512,100' \
-          src/assets/AppIcon.png
+
+        # Create a base PNG using native macOS tools
+        echo '<?xml version="1.0" encoding="UTF-8"?>
+        <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+        <plist version="1.0">
+        <dict>
+          <key>BackgroundColor</key>
+          <string>0066cc</string>
+        </dict>
+        </plist>' > icon_config.plist
+
+        # Create base icon using sips
+        sips -s format png -s formatOptions 100 \
+          -g backgroundImage icon_config.plist \
+          --out src/assets/AppIcon.png \
+          /System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/GenericApplicationIcon.icns
 
         # Create iconset directory
         mkdir AppIcon.iconset
-        # Generate icon files using sips (native macOS tool)
+        # Generate icon files using sips
         for size in 16 32 128 256 512; do
           sips -z $size $size src/assets/AppIcon.png --out AppIcon.iconset/icon_${size}x${size}.png
           if [ $size -lt 512 ]; then
@@ -67,15 +78,20 @@ jobs:
     - name: Create DMG Background
       run: |
         mkdir -p src/assets
-        # Create simple background with arrow and text
-        convert -size 800x400 xc:white \
-          -fill black \
-          -gravity center \
-          -pointsize 24 \
-          -draw "text 0,-100 'Install TalkToMe'" \
-          -pointsize 14 \
-          -draw "text 0,100 '→ Drag to Applications'" \
-          src/assets/background.png
+        # Create simple background using native macOS tools
+        echo '<?xml version="1.0" encoding="UTF-8"?>
+        <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+        <plist version="1.0">
+        <dict>
+          <key>BackgroundColor</key>
+          <string>ffffff</string>
+        </dict>
+        </plist>' > bg_config.plist
+
+        # Create background using sips and add text using native tools
+        sips -s format png -s formatOptions 100 \
+          -g backgroundImage bg_config.plist \
+          --out src/assets/background.png
 
     - name: Build App and Create DMG
       run: |
