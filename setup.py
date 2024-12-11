@@ -5,37 +5,31 @@ import os
 import sys
 from setuptools import setup
 
-def get_dylib_path():
-    """Get the path to the PortAudio dylib."""
-    lib_path = os.path.abspath('lib/libportaudio.2.dylib')
-    if not os.path.exists(lib_path):
-        raise ValueError(f"PortAudio library not found at {lib_path}")
-    return lib_path
-
 APP = ['src/main.py']
 DATA_FILES = [
     ('assets', ['src/assets/AppIcon.icns']),
 ]
 
+# Simplified package structure to avoid recursion
 OPTIONS = {
     'argv_emulation': False,
     'iconfile': 'src/assets/AppIcon.icns',
     'packages': ['pyaudio'],
     'includes': ['numpy', 'torch', 'whisper', 'rubicon.objc'],
     'excludes': ['matplotlib', 'tkinter', 'PyQt5', 'wx', 'test'],
-    'frameworks': [get_dylib_path()],
     'strip': True,
     'optimize': 2,
+    'dylib_excludes': ['libportaudio.2.dylib'],  # Exclude from automatic detection
+    'frameworks': ['lib/libportaudio.2.dylib'],  # Explicitly include our copy
     'plist': {
         'CFBundleName': 'TalkToMe',
         'CFBundleDisplayName': 'TalkToMe',
         'CFBundleIdentifier': 'com.bmaddick.talktome',
         'CFBundleVersion': '1.0.0',
         'CFBundleShortVersionString': '1.0.0',
-        'LSMinimumSystemVersion': '10.10.0',
-        'NSMicrophoneUsageDescription': 'TalkToMe needs access to your microphone for voice input.',
+        'LSMinimumSystemVersion': '10.12.0',
+        'NSMicrophoneUsageDescription': 'TalkToMe needs microphone access to convert speech to text.',
         'NSAppleEventsUsageDescription': 'TalkToMe needs to control other applications to input text.',
-        'LSApplicationCategoryType': 'public.app-category.productivity',
         'LSUIElement': True,
     }
 }
