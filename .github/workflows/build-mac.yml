@@ -21,9 +21,7 @@ jobs:
     - name: Install System Dependencies
       run: |
         brew install create-dmg
-        brew uninstall --ignore-dependencies portaudio || true
         brew install portaudio
-        brew link --force portaudio
 
         # Set up and verify PortAudio paths
         PORTAUDIO_PREFIX=$(brew --prefix portaudio)
