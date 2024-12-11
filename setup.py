@@ -1,6 +1,5 @@
 import sys
 import os
-import site
 from setuptools import setup
 
 sys.setrecursionlimit(5000)
@@ -31,24 +30,14 @@ if not os.path.exists(PORTAUDIO_LIB):
 
 print(f"Using PortAudio library at: {PORTAUDIO_LIB}")
 
-# Get site-packages directory
-site_packages = site.getsitepackages()[0]
-pyaudio_path = os.path.join(site_packages, 'pyaudio')
-
 OPTIONS = {
     'argv_emulation': False,
     'iconfile': 'src/assets/AppIcon.icns',
-    'packages': [
-        'numpy', 'whisper', 'pyaudio', 'tiktoken', 'torch',
-        'regex', 'tqdm', 'more_itertools', 'requests', 'typing_extensions'
-    ],
-    'includes': [
-        'numpy', 'whisper', 'pyaudio._portaudio', 'pyautogui',
-        'tiktoken', 'torch', 'regex', 'tqdm'
-    ],
+    'packages': ['numpy', 'whisper', 'pyaudio', 'tiktoken', 'torch'],
+    'includes': ['numpy', 'whisper', 'pyaudio._portaudio', 'pyautogui'],
     'excludes': ['matplotlib', 'tkinter', 'PyQt5', 'wx', 'test'],
-    'resources': ['src/assets', pyaudio_path],
-    'frameworks': [PORTAUDIO_LIB],
+    'binary_includes': [PORTAUDIO_LIB],  # Directly include the PortAudio library
+    'resources': ['src/assets'],
     'dylib_excludes': ['libgfortran.3.dylib', 'libquadmath.0.dylib', 'libgcc_s.1.dylib'],
     'strip': True,
     'plist': {
