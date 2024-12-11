@@ -20,8 +20,13 @@ jobs:
 
     - name: Install System Dependencies
       run: |
+        # Install required system dependencies
         brew install create-dmg
+        brew install imagemagick
         brew install portaudio
+
+        # Verify ImageMagick installation
+        convert --version
 
         # Set up and verify PortAudio paths
         PORTAUDIO_PREFIX=$(brew --prefix portaudio)
@@ -30,7 +35,7 @@ jobs:
         echo "LIBRARY_PATH=$PORTAUDIO_PREFIX/lib:$LIBRARY_PATH" >> $GITHUB_ENV
         echo "PKG_CONFIG_PATH=$PORTAUDIO_PREFIX/lib/pkgconfig:$PKG_CONFIG_PATH" >> $GITHUB_ENV
 
-        # Verify installation
+        # Verify PortAudio installation
         ls -la $PORTAUDIO_PREFIX/lib/
         pkg-config --libs --cflags portaudio-2.0
 
