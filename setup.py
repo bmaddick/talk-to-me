@@ -66,8 +66,7 @@ OPTIONS = {
     'excludes': ['matplotlib', 'tkinter', 'PyQt5', 'wx', 'test'],
     'resources': ['src/assets'],
     'strip': True,
-    'frameworks': ['lib/libportaudio.2.dylib'],  # Add PortAudio as framework
-    'dylib_excludes': ['libportaudio.2.dylib.framework'],  # Exclude framework search
+    'dylib_excludes': ['libportaudio.2.dylib.framework'],
     'site_packages': True,
     'plist': {
         'CFBundleName': 'TalkToMe',
