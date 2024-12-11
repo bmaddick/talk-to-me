@@ -45,18 +45,36 @@ def check(cmd, mf):
 
     print(f"Using PortAudio library: {portaudio_lib}")
 
-    # Create a framework-style bundle for PortAudio
-    framework_path = os.path.join(os.getcwd(), 'Frameworks')
-    os.makedirs(framework_path, exist_ok=True)
-    framework_lib = os.path.join(framework_path, 'libportaudio.2.dylib')
+    # Create a proper framework bundle structure
+    framework_dir = os.path.join(os.getcwd(), 'build', 'frameworks')
+    framework_name = 'libportaudio.2.dylib.framework'
+    framework_path = os.path.join(framework_dir, framework_name)
+    versions_dir = os.path.join(framework_path, 'Versions', 'A')
+    lib_path = os.path.join(versions_dir, 'libportaudio.2.dylib')
 
-    # Copy and configure the library
-    if not os.path.exists(framework_lib):
-        subprocess.run(['cp', portaudio_lib, framework_lib], check=True)
-        subprocess.run(['chmod', '+x', framework_lib], check=True)
-        subprocess.run(['install_name_tool', '-id', '@rpath/libportaudio.2.dylib', framework_lib], check=True)
+    # Create the framework directory structure
+    os.makedirs(versions_dir, exist_ok=True)
+
+    # Copy the library to the framework
+    if not os.path.exists(lib_path):
+        subprocess.run(['cp', portaudio_lib, lib_path], check=True)
+        subprocess.run(['chmod', '+x', lib_path], check=True)
+
+        # Create symlinks
+        os.symlink('A', os.path.join(framework_path, 'Versions', 'Current'))
+        os.symlink(
+            os.path.join('Versions', 'Current', 'libportaudio.2.dylib'),
+            os.path.join(framework_path, 'libportaudio.2.dylib')
+        )
+
+        # Update install names
+        subprocess.run([
+            'install_name_tool', '-id',
+            '@executable_path/../Frameworks/libportaudio.2.dylib.framework/Versions/A/libportaudio.2.dylib',
+            lib_path
+        ], check=True)
 
     return dict(
-        frameworks=[framework_lib],
-        resources=[framework_lib]
+        frameworks=[framework_path],
+        resources=[framework_path]
     )

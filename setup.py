@@ -1,6 +1,5 @@
 import sys
 import os
-import subprocess
 from setuptools import setup
 
 sys.setrecursionlimit(5000)
@@ -10,30 +9,6 @@ DATA_FILES = [
     ('assets', ['src/assets/AppIcon.icns', 'src/assets/background.png'])
 ]
 
-def get_portaudio_path():
-    """Get PortAudio library path."""
-    if 'PORTAUDIO_LIB' in os.environ:
-        lib_path = os.environ['PORTAUDIO_LIB']
-        if os.path.exists(lib_path):
-            return lib_path
-
-    try:
-        brew_prefix = subprocess.check_output(['brew', '--prefix', 'portaudio']).decode().strip()
-        lib_path = os.path.join(brew_prefix, 'lib', 'libportaudio.2.dylib')
-        if os.path.exists(lib_path):
-            return lib_path
-    except:
-        pass
-
-    return None
-
-portaudio_path = get_portaudio_path()
-if not portaudio_path:
-    print("Error: PortAudio library not found. Please install PortAudio using 'brew install portaudio'")
-    sys.exit(1)
-
-print(f"Using PortAudio from: {portaudio_path}")
-
 OPTIONS = {
     'argv_emulation': False,
     'iconfile': 'src/assets/AppIcon.icns',
@@ -41,8 +16,9 @@ OPTIONS = {
     'includes': ['numpy', 'whisper', 'pyautogui'],
     'excludes': ['matplotlib', 'tkinter', 'PyQt5', 'wx', 'test'],
     'resources': ['src/assets'],
-    'frameworks': [portaudio_path],
     'strip': True,
+    'recipe_plugins': ['src.recipes'],
+    'frameworks': [],  # Let the recipe handle the framework
     'plist': {
         'CFBundleName': 'TalkToMe',
         'CFBundleDisplayName': 'TalkToMe',
