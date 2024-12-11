@@ -25,20 +25,19 @@ jobs:
         PORTAUDIO_PATH=$(brew --prefix portaudio)
         echo "PORTAUDIO_PATH=$PORTAUDIO_PATH" >> $GITHUB_ENV
 
-        # Create site-packages directory
-        mkdir -p build/lib/site-packages
-        cp "$PORTAUDIO_PATH/lib/libportaudio.2.dylib" build/lib/site-packages/
-        chmod +x build/lib/site-packages/libportaudio.2.dylib
+        # Copy PortAudio library to a known location
+        mkdir -p lib
+        cp "$PORTAUDIO_PATH/lib/libportaudio.2.dylib" lib/
+        chmod +x lib/libportaudio.2.dylib
 
         # Fix install name
-        install_name_tool -id "@executable_path/../Frameworks/libportaudio.2.dylib" \
-          build/lib/site-packages/libportaudio.2.dylib
+        install_name_tool -id "@executable_path/../Frameworks/libportaudio.2.dylib" lib/libportaudio.2.dylib
 
         # Verify library setup
-        echo "Site-packages contents:"
-        ls -R build/lib/site-packages/
+        echo "Library location:"
+        ls -l lib/
         echo "Library dependencies:"
-        otool -L build/lib/site-packages/libportaudio.2.dylib
+        otool -L lib/libportaudio.2.dylib
 
     - name: Create App Assets
       run: |
@@ -68,15 +67,14 @@ jobs:
         python -c "import pyaudio; print('PyAudio location:', pyaudio.__file__)"
         python -c "import whisper; print('Whisper location:', whisper.__file__)"
         python -c "import numpy; print('NumPy location:', numpy.__file__)"
-        python -c "import pyaudio._portaudio as pa; print('PortAudio:', pa.__file__)"
 
         echo "Python dependencies installed successfully"
 
     - name: Build App
       run: |
         # Set environment variables
-        export PYTHONPATH="$PWD/build/lib/site-packages:$PYTHONPATH"
-        export DYLD_LIBRARY_PATH="$PWD/build/lib/site-packages:$DYLD_LIBRARY_PATH"
+        export DYLD_LIBRARY_PATH="$PWD/lib:$DYLD_LIBRARY_PATH"
+        export LIBRARY_PATH="$PWD/lib:$LIBRARY_PATH"
 
         # Clean previous builds
         rm -rf dist
