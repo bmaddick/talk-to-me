@@ -57,14 +57,13 @@ jobs:
         rm -rf src/assets
         mkdir -p src/assets
 
-        # Create a white background image
+        # Create a simple white background for DMG
         mkdir -p src/assets
-        echo -n > src/assets/background.png
-        sips -s format png src/assets/background.png --out src/assets/background.png
+        touch src/assets/background.png
+        sips -s format png src/assets/background.png
         sips -z 400 800 src/assets/background.png
-        sips -s format png -s formatOptions 100 src/assets/background.png
 
-        # Use system app icon
+        # Create app icon using system resources
         cp /System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/GenericApplicationIcon.icns src/assets/AppIcon.icns
 
     - name: Build App
