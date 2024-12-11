@@ -31,11 +31,6 @@ jobs:
         echo "LIBRARY_PATH=$PORTAUDIO_PREFIX/lib:$LIBRARY_PATH" >> $GITHUB_ENV
         echo "PKG_CONFIG_PATH=$PORTAUDIO_PREFIX/lib/pkgconfig:$PKG_CONFIG_PATH" >> $GITHUB_ENV
 
-        # Debug: Show library locations
-        echo "PortAudio library location:"
-        ls -l "$PORTAUDIO_PREFIX/lib/libportaudio.2.dylib"
-        otool -L "$PORTAUDIO_PREFIX/lib/libportaudio.2.dylib"
-
         # Create frameworks directory and copy PortAudio
         mkdir -p build/frameworks
         cp "$PORTAUDIO_PREFIX/lib/libportaudio.2.dylib" build/frameworks/
@@ -51,23 +46,28 @@ jobs:
         python -m pip install --use-pep517 -r requirements.txt
         python -m pip install --use-pep517 py2app
 
-    - name: Create App Icon and Background
+    - name: Create App Assets
       run: |
         # Clean up any existing directories
         rm -rf src/assets
         mkdir -p src/assets
 
-        # Create a white background image for DMG
-        echo -n > src/assets/background.png
-        sips -s format png src/assets/background.png --out src/assets/background.png
-        sips -z 400 800 src/assets/background.png
-        sips -s format png -s formatOptions 100 src/assets/background.png
+        # Create a simple white background for DMG
+        mkdir -p src/assets
+        echo "Creating white background..."
+        osascript -e 'tell application "System Events" to tell disk "Macintosh HD" to set picture of desktop to missing value'
+        screencapture -R 0,0,800,400 src/assets/background.png
 
-        # Create a simple app icon using system resources
+        # Use system app icon
         cp /System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/GenericApplicationIcon.icns src/assets/AppIcon.icns
 
     - name: Build App
       run: |
+        # Debug: Show PortAudio location
+        ls -l build/frameworks/libportaudio.2.dylib
+        otool -L build/frameworks/libportaudio.2.dylib
+
+        # Build the app
         python setup.py py2app
 
     - name: Create DMG
