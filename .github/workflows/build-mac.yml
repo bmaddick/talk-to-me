@@ -36,8 +36,8 @@ jobs:
         ln -s A Current
 
         # Set environment variables for build
-        echo "DYLD_LIBRARY_PATH=$PWD/lib:$DYLD_LIBRARY_PATH" >> $GITHUB_ENV
-        echo "LIBRARY_PATH=$PWD/lib:$LIBRARY_PATH" >> $GITHUB_ENV
+        echo "DYLD_LIBRARY_PATH=$PWD/lib/libportaudio.2.dylib.framework:$DYLD_LIBRARY_PATH" >> $GITHUB_ENV
+        echo "LIBRARY_PATH=$PWD/lib/libportaudio.2.dylib.framework:$LIBRARY_PATH" >> $GITHUB_ENV
 
     - name: Install Dependencies
       run: |
@@ -46,9 +46,9 @@ jobs:
         pip install --use-pep517 py2app
 
         # Install PyAudio with PortAudio path
-        export LDFLAGS="-L$PWD/lib"
+        export LDFLAGS="-L$PWD/lib/libportaudio.2.dylib.framework/Versions/A"
         export CFLAGS="-I$(brew --prefix portaudio)/include"
-        DYLD_LIBRARY_PATH=$PWD/lib pip install --use-pep517 pyaudio
+        DYLD_LIBRARY_PATH=$PWD/lib/libportaudio.2.dylib.framework pip install --use-pep517 pyaudio
 
         # Install remaining dependencies
         pip install -r requirements.txt
