@@ -25,19 +25,20 @@ jobs:
         PORTAUDIO_PATH=$(brew --prefix portaudio)
         echo "PORTAUDIO_PATH=$PORTAUDIO_PATH" >> $GITHUB_ENV
 
-        # Create audio plugins directory structure
-        mkdir -p plugins/audio
-        cp "$PORTAUDIO_PATH/lib/libportaudio.2.dylib" plugins/audio/
-        chmod +x plugins/audio/libportaudio.2.dylib
+        # Create site-packages directory
+        mkdir -p build/lib/site-packages
+        cp "$PORTAUDIO_PATH/lib/libportaudio.2.dylib" build/lib/site-packages/
+        chmod +x build/lib/site-packages/libportaudio.2.dylib
 
         # Fix install name
-        install_name_tool -id "@executable_path/../plugins/audio/libportaudio.2.dylib" plugins/audio/libportaudio.2.dylib
+        install_name_tool -id "@executable_path/../Frameworks/libportaudio.2.dylib" \
+          build/lib/site-packages/libportaudio.2.dylib
 
-        # Verify plugin structure
-        echo "Plugin structure:"
-        ls -R plugins/
+        # Verify library setup
+        echo "Site-packages contents:"
+        ls -R build/lib/site-packages/
         echo "Library dependencies:"
-        otool -L plugins/audio/libportaudio.2.dylib
+        otool -L build/lib/site-packages/libportaudio.2.dylib
 
     - name: Create App Assets
       run: |
@@ -67,17 +68,18 @@ jobs:
         python -c "import pyaudio; print('PyAudio location:', pyaudio.__file__)"
         python -c "import whisper; print('Whisper location:', whisper.__file__)"
         python -c "import numpy; print('NumPy location:', numpy.__file__)"
+        python -c "import pyaudio._portaudio as pa; print('PortAudio:', pa.__file__)"
 
         echo "Python dependencies installed successfully"
 
     - name: Build App
       run: |
         # Set environment variables
-        export DYLD_LIBRARY_PATH="$PWD/plugins/audio:$DYLD_LIBRARY_PATH"
-        export LIBRARY_PATH="$PWD/plugins/audio:$LIBRARY_PATH"
+        export PYTHONPATH="$PWD/build/lib/site-packages:$PYTHONPATH"
+        export DYLD_LIBRARY_PATH="$PWD/build/lib/site-packages:$DYLD_LIBRARY_PATH"
 
         # Clean previous builds
-        rm -rf build dist
+        rm -rf dist
 
         # Build with verbose output
         python setup.py py2app -vv
