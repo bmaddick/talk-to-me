@@ -10,12 +10,31 @@ DATA_FILES = [
     ('assets', ['src/assets/AppIcon.icns', 'src/assets/background.png'])
 ]
 
-# Get PortAudio path from environment or use default Homebrew location
+# Framework configuration
+FRAMEWORK_NAME = 'libportaudio.2.dylib.framework'
+FRAMEWORK_DIR = os.path.join(os.getcwd(), FRAMEWORK_NAME)
 PORTAUDIO_PATH = os.getenv('PORTAUDIO_PATH', '/opt/homebrew/opt/portaudio')
+PORTAUDIO_LIB = os.path.join(PORTAUDIO_PATH, 'lib', 'libportaudio.2.dylib')
 
-# Framework path in the app bundle
-FRAMEWORKS_PATH = 'Frameworks'
-os.makedirs(FRAMEWORKS_PATH, exist_ok=True)
+# Create framework structure
+if os.path.exists(PORTAUDIO_LIB):
+    # Create framework directory structure
+    os.makedirs(os.path.join(FRAMEWORK_DIR, 'Versions', 'A'), exist_ok=True)
+    framework_lib = os.path.join(FRAMEWORK_DIR, 'Versions', 'A', 'libportaudio.2.dylib')
+
+    # Copy library and create symlinks
+    shutil.copy2(PORTAUDIO_LIB, framework_lib)
+    os.chmod(framework_lib, 0o755)
+
+    # Create symbolic links
+    if not os.path.exists(os.path.join(FRAMEWORK_DIR, 'Versions', 'Current')):
+        os.symlink('A', os.path.join(FRAMEWORK_DIR, 'Versions', 'Current'))
+    if not os.path.exists(os.path.join(FRAMEWORK_DIR, 'libportaudio.2.dylib')):
+        os.symlink('Versions/Current/libportaudio.2.dylib', os.path.join(FRAMEWORK_DIR, 'libportaudio.2.dylib'))
+
+    print(f"Created framework at: {FRAMEWORK_DIR}")
+else:
+    print(f"Warning: PortAudio not found at {PORTAUDIO_LIB}")
 
 OPTIONS = {
     'argv_emulation': False,  # Disable argv emulation for better Mac integration
@@ -29,7 +48,7 @@ OPTIONS = {
         'tiktoken', 'torch', 'regex', 'tqdm'
     ],
     'excludes': ['matplotlib', 'tkinter', 'PyQt5', 'wx', 'test', 'sphinx', 'sqlalchemy', 'pandas', 'pygame'],
-    'frameworks': ['Frameworks/libportaudio.2.dylib'],
+    'frameworks': [FRAMEWORK_NAME],
     'resources': ['src/assets'],
     'dylib_excludes': ['libgfortran.3.dylib', 'libquadmath.0.dylib', 'libgcc_s.1.dylib'],
     'strip': True,  # Strip debug symbols to reduce size

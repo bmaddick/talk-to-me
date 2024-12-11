@@ -20,13 +20,33 @@ jobs:
 
     - name: Install System Dependencies
       run: |
-        brew install create-dmg
+        # Install PortAudio
         brew install portaudio
         PORTAUDIO_PATH=$(brew --prefix portaudio)
         echo "PORTAUDIO_PATH=$PORTAUDIO_PATH" >> $GITHUB_ENV
-        echo "Found PortAudio at: $PORTAUDIO_PATH"
-        ls -l $PORTAUDIO_PATH/lib/
-        otool -L $PORTAUDIO_PATH/lib/libportaudio.2.dylib
+
+        # Create framework structure
+        FRAMEWORK_NAME="libportaudio.2.dylib.framework"
+        mkdir -p "$FRAMEWORK_NAME/Versions/A"
+        cp "$PORTAUDIO_PATH/lib/libportaudio.2.dylib" "$FRAMEWORK_NAME/Versions/A/"
+        chmod +x "$FRAMEWORK_NAME/Versions/A/libportaudio.2.dylib"
+
+        # Create symbolic links
+        cd "$FRAMEWORK_NAME"
+        ln -sf "Versions/A/libportaudio.2.dylib" "libportaudio.2.dylib"
+        cd Versions
+        ln -sf "A" "Current"
+        cd ../..
+
+        # Fix install name
+        install_name_tool -id "@executable_path/../Frameworks/$FRAMEWORK_NAME/Versions/A/libportaudio.2.dylib" \
+          "$FRAMEWORK_NAME/Versions/A/libportaudio.2.dylib"
+
+        # Verify framework
+        echo "Framework structure:"
+        ls -R "$FRAMEWORK_NAME"
+        echo "Library dependencies:"
+        otool -L "$FRAMEWORK_NAME/Versions/A/libportaudio.2.dylib"
 
     - name: Create App Assets
       run: |
@@ -36,7 +56,7 @@ jobs:
         echo "Created assets directory"
 
         # Create white background using base64
-        echo "iVBORw0KGgoAAAANSUhEUgAAAyAAAAGQAQAAAACle3N1AAAACXBIWXMAAA7DAAAOwwHHb6hkAAAAGXRFWHRTb2Z0d2FyZQB3d3cuaW5rc2NhcGUub3Jnm+48GgAAABJ0RVh0VGl0bGUAV2hpdGUgU3F1YXJlALjNkJYAAAATdEVYdEF1dGhvcgBEZXZpbiBBc3Npc3QC5YbmAAAAIXRFWHRDcmVhdGlvbiBUaW1lADIwMjQtMDEtMTFUMDA6NTk6MzlaJHJnAAAAHHRFWHRTb3VyY2UAaHR0cHM6Ly9pbmtzY2FwZS5vcmeb7jwaAAAAXUlEQVR42u3BMQEAAADCoPVPbQwfoAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAOD1ACffAAF99yA0AAAAAElFTkSuQmCC" | base64 -d > src/assets/background.png
+        echo "iVBORw0KGgoAAAANSUhEUgAAAyAAAAGQAQAAAACle3N1AAAACXBIWXMAAA7DAAAOwwHHb6hkAAAAGXRFWHRTb2Z0d2FyZQB3d3cuaW5rc2NhcGUub3Jnm+48GgAAABJ0RVh0VGl0dGUAV2hpdGUgU3F1YXJlALjNkJYAAAATdEVYdEF1dGhvcgBEZXZpbiBBc3Npc3QC5YbmAAAAIXRFWHRDcmVhdGlvbiBUaW1lADIwMjQtMDEtMTFUMDA6NTk6MzlaJHJnAAAAHHRFWHRTb3VyY2UAaHR0cHM6Ly9pbmtzY2FwZS5vcmeb7jwaAAAAXUlEQVR42u3BMQEAAADCoPVPbQwfoAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAOD1ACffAAF99yA0AAAAAElFTkSuQmCC" | base64 -d > src/assets/background.png
         echo "Created background image"
 
         # Use system app icon
@@ -51,41 +71,19 @@ jobs:
         python -m pip install --upgrade pip setuptools wheel
         python -m pip install --use-pep517 -r requirements.txt
         python -m pip install --use-pep517 py2app
+
+        # Verify critical dependencies
         python -c "import pyaudio; print('PyAudio location:', pyaudio.__file__)"
         python -c "import whisper; print('Whisper location:', whisper.__file__)"
-        echo "Installed Python dependencies successfully"
+        python -c "import numpy; print('NumPy location:', numpy.__file__)"
 
-    - name: Prepare Frameworks
-      run: |
-        # Create Frameworks directory
-        mkdir -p Frameworks
-
-        # Copy PortAudio library
-        cp "$PORTAUDIO_PATH/lib/libportaudio.2.dylib" Frameworks/
-        chmod +x Frameworks/libportaudio.2.dylib
-
-        # Fix install name
-        install_name_tool -id "@executable_path/../Frameworks/libportaudio.2.dylib" Frameworks/libportaudio.2.dylib
-
-        # Verify framework
-        echo "Framework contents:"
-        ls -la Frameworks/
-        echo "Library dependencies:"
-        otool -L Frameworks/libportaudio.2.dylib
+        echo "Python dependencies installed successfully"
 
     - name: Build App
       run: |
         # Set environment variables
-        PORTAUDIO_PREFIX=$(brew --prefix portaudio)
-        export DYLD_LIBRARY_PATH="$PWD/Frameworks:$DYLD_LIBRARY_PATH"
-        export LIBRARY_PATH="$PWD/Frameworks:$LIBRARY_PATH"
-        export PKG_CONFIG_PATH="$PORTAUDIO_PREFIX/lib/pkgconfig:$PKG_CONFIG_PATH"
-        export PORTAUDIO_PATH="$PORTAUDIO_PREFIX"
-
-        echo "Environment variables set:"
-        echo "PORTAUDIO_PREFIX: $PORTAUDIO_PREFIX"
-        echo "DYLD_LIBRARY_PATH: $DYLD_LIBRARY_PATH"
-        echo "LIBRARY_PATH: $LIBRARY_PATH"
+        export DYLD_LIBRARY_PATH="$PWD/$FRAMEWORK_NAME:$DYLD_LIBRARY_PATH"
+        export LIBRARY_PATH="$PWD/$FRAMEWORK_NAME:$LIBRARY_PATH"
 
         # Clean previous builds
         rm -rf build dist
@@ -96,6 +94,8 @@ jobs:
         # Verify app bundle structure
         echo "App bundle contents:"
         ls -R dist/TalkToMe.app/Contents/
+        echo "Frameworks in app bundle:"
+        ls -la dist/TalkToMe.app/Contents/Frameworks/
 
     - name: Create DMG
       run: |
