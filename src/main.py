@@ -38,11 +38,16 @@ class TalkToMeApp(rumps.App):
 
         # Verify app visibility on startup
         self.verify_visibility()
+        # Initial permission check on startup
+        self.check_permissions(None)
 
     def verify_visibility(self):
         """Verify the app is visible in the menu bar."""
         logger.debug("Verifying menu bar visibility...")
         try:
+            # Force menu bar update
+            self.menu.update()
+            # Check if app is visible
             result = subprocess.run(
                 ['osascript', '-e', 'tell application "System Events" to get every process whose name contains "TalkToMe"'],
                 capture_output=True,
@@ -50,9 +55,14 @@ class TalkToMeApp(rumps.App):
             )
             if "TalkToMe" not in result.stdout:
                 logger.warning("App not visible in menu bar, attempting to refresh...")
+                # Try to force app to front
+                subprocess.run(['osascript', '-e', 'tell application "TalkToMe" to activate'])
+                time.sleep(1)  # Give system time to update
                 self.menu.update()
         except Exception as e:
             logger.error(f"Error verifying visibility: {e}")
+            # Try to recover visibility
+            self.menu = self.menu  # Force menu rebuild
 
     @rumps.clicked("Start Recording")
     def start_recording(self, _):
@@ -104,6 +114,8 @@ class TalkToMeApp(rumps.App):
             return True
 
         try:
+            permissions_granted = True
+
             # Check microphone permission
             mic_check = subprocess.run(
                 ['osascript', '-e', 'tell application "System Events" to get microphone access of current application'],
@@ -111,11 +123,12 @@ class TalkToMeApp(rumps.App):
                 text=True
             )
             if mic_check.returncode != 0:
+                permissions_granted = False
                 logger.info("Requesting microphone permission...")
                 subprocess.run(['tccutil', 'reset', 'Microphone'], check=True)
                 subprocess.run([
                     'osascript', '-e',
-                    'tell application "System Events" to display dialog "TalkToMe needs microphone access. Please click OK, then allow access in System Settings." buttons {"Open Settings", "Cancel"} default button "Open Settings"'
+                    'tell application "System Events" to display dialog "TalkToMe needs microphone access. Please click OK, then allow access in System Settings. After granting permission, please restart the app." buttons {"Open Settings", "Cancel"} default button "Open Settings"'
                 ], check=True)
                 subprocess.run(['open', 'x-apple.systempreferences:com.apple.preference.security?Privacy_Microphone'])
 
@@ -126,16 +139,23 @@ class TalkToMeApp(rumps.App):
                 text=True
             )
             if acc_check.returncode != 0:
+                permissions_granted = False
                 logger.info("Requesting accessibility permission...")
                 subprocess.run([
                     'osascript', '-e',
-                    'tell application "System Events" to display dialog "TalkToMe needs accessibility access. Please click OK, then allow access in System Settings." buttons {"Open Settings", "Cancel"} default button "Open Settings"'
+                    'tell application "System Events" to display dialog "TalkToMe needs accessibility access. Please click OK, then allow access in System Settings. After granting permission, please restart the app." buttons {"Open Settings", "Cancel"} default button "Open Settings"'
                 ], check=True)
                 subprocess.run(['open', 'x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility'])
 
-            # Verify visibility after permission changes
-            self.verify_visibility()
-            rumps.notification("TalkToMe", "Permissions Check", "Please grant any requested permissions and restart the app if needed")
+            # If permissions were just granted, suggest restart
+            if not permissions_granted:
+                rumps.notification("TalkToMe", "Restart Required", "Please restart the app after granting permissions")
+                logger.info("Permissions changed - restart recommended")
+            else:
+                # Verify visibility after confirming permissions
+                self.verify_visibility()
+                rumps.notification("TalkToMe", "Permissions Check", "All permissions are properly configured")
+
         except Exception as e:
             logger.error(f"Error checking permissions: {e}")
             rumps.notification("TalkToMe Error", "Permission Check Failed", str(e))
