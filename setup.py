@@ -19,6 +19,8 @@ OPTIONS = {
     'resources': ['src/assets'],
     'strip': True,
     'site_packages': True,
+    'frameworks': ['$(brew --prefix portaudio)/lib/libportaudio.2.dylib'],
+    'dylib_excludes': ['libportaudio.2.dylib.framework'],
     'plist': {
         'CFBundleName': 'TalkToMe',
         'CFBundleDisplayName': 'TalkToMe',
