@@ -22,45 +22,75 @@ jobs:
       run: |
         brew install create-dmg
         brew install portaudio
+        echo "Installed system dependencies successfully"
 
     - name: Set up PortAudio
       run: |
         # Create frameworks directory
         mkdir -p build/frameworks
+        echo "Created frameworks directory"
+
+        # Get PortAudio path
+        PORTAUDIO_PATH=$(brew --prefix portaudio)
+        echo "PortAudio path: $PORTAUDIO_PATH"
 
         # Copy PortAudio library
-        cp "$(brew --prefix portaudio)/lib/libportaudio.2.dylib" build/frameworks/
+        cp "$PORTAUDIO_PATH/lib/libportaudio.2.dylib" build/frameworks/
         chmod +x build/frameworks/libportaudio.2.dylib
+        echo "Copied PortAudio library to build/frameworks"
 
         # Fix library install name
         install_name_tool -id "@executable_path/../Frameworks/libportaudio.2.dylib" build/frameworks/libportaudio.2.dylib
+        echo "Fixed library install name"
+
+        # Verify library exists and is executable
+        ls -l build/frameworks/libportaudio.2.dylib
+        otool -L build/frameworks/libportaudio.2.dylib
 
     - name: Create App Assets
       run: |
         # Create assets directory
         mkdir -p src/assets
+        echo "Created assets directory"
 
         # Create white background
         echo "iVBORw0KGgoAAAANSUhEUgAAAyAAAAGQAQAAAACle3N1AAAACXBIWXMAAA7DAAAOwwHHb6hkAAAAGXRFWHRTb2Z0d2FyZQB3d3cuaW5rc2NhcGUub3Jnm+48GgAAABJ0RVh0VGl0bGUAV2hpdGUgU3F1YXJlALjNkJYAAAATdEVYdEF1dGhvcgBEZXZpbiBBc3Npc3QC5YbmAAAAIXRFWHRDcmVhdGlvbiBUaW1lADIwMjQtMDEtMTFUMDA6NTk6MzlaJHJnAAAAHHRFWHRTb3VyY2UAaHR0cHM6Ly9pbmtzY2FwZS5vcmeb7jwaAAAAXUlEQVR42u3BMQEAAADCoPVPbQwfoAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAOD1ACffAAF99yA0AAAAAElFTkSuQmCC" | base64 -d > src/assets/background.png
+        echo "Created background image"
 
         # Use system app icon
         cp /System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/GenericApplicationIcon.icns src/assets/AppIcon.icns
+        echo "Copied system app icon"
+
+        # Verify assets exist
+        ls -l src/assets/
 
     - name: Install Python Dependencies
       run: |
         python -m pip install --upgrade pip setuptools wheel
         python -m pip install --use-pep517 -r requirements.txt
         python -m pip install --use-pep517 py2app
+        echo "Installed Python dependencies successfully"
 
     - name: Build App
       run: |
         # Set environment variables
-        export DYLD_LIBRARY_PATH="$(brew --prefix portaudio)/lib:$DYLD_LIBRARY_PATH"
-        export LIBRARY_PATH="$(brew --prefix portaudio)/lib:$LIBRARY_PATH"
-        export PKG_CONFIG_PATH="$(brew --prefix portaudio)/lib/pkgconfig:$PKG_CONFIG_PATH"
+        PORTAUDIO_PREFIX=$(brew --prefix portaudio)
+        export DYLD_LIBRARY_PATH="$PORTAUDIO_PREFIX/lib:$DYLD_LIBRARY_PATH"
+        export LIBRARY_PATH="$PORTAUDIO_PREFIX/lib:$LIBRARY_PATH"
+        export PKG_CONFIG_PATH="$PORTAUDIO_PREFIX/lib/pkgconfig:$PKG_CONFIG_PATH"
+        export PORTAUDIO_PATH="$PORTAUDIO_PREFIX"
 
-        # Build the app
-        python setup.py py2app
+        echo "Environment variables set:"
+        echo "PORTAUDIO_PREFIX: $PORTAUDIO_PREFIX"
+        echo "DYLD_LIBRARY_PATH: $DYLD_LIBRARY_PATH"
+        echo "LIBRARY_PATH: $LIBRARY_PATH"
+
+        # Verify PortAudio library exists
+        ls -l "$PORTAUDIO_PREFIX/lib/libportaudio.2.dylib"
+        ls -l build/frameworks/libportaudio.2.dylib
+
+        # Build with verbose output
+        python setup.py py2app -v
 
     - name: Create DMG
       run: |
